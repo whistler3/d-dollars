@@ -1,5 +1,5 @@
 ---
-  title:"d-dollars"
+title:"d-dollars"
 author:"Cindy Semrau"
 date:"`r Sys.Date()`"
 output:rmarkdown::html_vignette
@@ -7,11 +7,9 @@ output:rmarkdown::html_vignette
   # remove all from memory -----
 rm(list=ls())
 
-# fake comment to test commit
-# change made using RStudio
 
 ### Load Libraries and functions
-# options(width = 150)
+options(width = 150)
 # Load libraries -----
 library(magrittr)
 library(tidyverse)
