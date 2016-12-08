@@ -1,9 +1,9 @@
----
-title:"d-dollars"
-author:"Cindy Semrau"
-date:"`r Sys.Date()`"
-output:rmarkdown::html_vignette
----
+# ---
+# title:"d-dollars"
+# author:"Cindy Semrau"
+# date:"`r Sys.Date()`"
+# output:rmarkdown::html_vignette
+# ---
   # remove all from memory -----
 rm(list=ls())
 
@@ -51,10 +51,10 @@ library(wordcloud)
 library(RColorBrewer)
 library(wordcloud2)
 
+library(quantmod) # Financial library
+library(rmarkdown)
+
 # library(dtplyr)
-# source("code_00_functions.R")
 
-#
-rmarkdown::render("code_01.R",  output_dir = "./report")
+source('~/RStudioWorkspace/d-dollars/code_01.R', echo=TRUE)
 
-# rmarkdown::render("code_02.R",  output_dir = "./report")

@@ -4,6 +4,29 @@
 #'     toc: TRUE
 #'     toc_depth: 4
 #'     code_folding: show
+#'     
 #' --- 
+datalist = list() 
 
-panderOptions('table.split.table', 175)
+#STEP 1: Master List
+symbols = c('AAPL','GOOG','EMAN')
+
+
+#STEP2: Creat a data list of stocks which can be succesfully found on yahoo( Many fail)
+
+ for(i in 1:length(symbols)) {
+   symbols[i]-> symbol
+   # specify the "from" date to desired start date
+   tryit <- try(getSymbols(symbol,from="2016-12-01", src='yahoo',auto.assign=FALSE))
+   if(inherits(tryit, "try-error")){
+     i <- i+1
+     remove(list = symbols[i])
+   } else {
+     datalist[[i]] <-tryit
+     rm(symbol)
+   }
+ }
+
+#STEP3 Compute Signal Data for all Stock
+#TODO:
+# For each stock data in list, create a new column with RSI() data from the close price
