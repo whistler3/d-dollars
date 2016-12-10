@@ -9,7 +9,8 @@
 options(width = 200)
 
 
-datalist = list() 
+dl = list() 
+
 #'### ------------------------------------------------------------------------
 #STEP 1: Master List
 symbols = c('AAPL','GOOG','EMAN')
@@ -36,7 +37,7 @@ symbols = c('AAPL','GOOG','EMAN')
      
      remove(list = symbols[i])
    } else {
-     datalist[[i]] <-tryit
+     dl[[i]] <-tryit
      rm(symbol)
    }
  }
@@ -46,9 +47,42 @@ symbols = c('AAPL','GOOG','EMAN')
 #'### ------------------------------------------------------------------------
 #STEP3 Compute Signal Data for all Stock
 #TODO:
+
+# brute force method that doesnt scale up
 # For each stock data in list, create a new column with RSI() data from the close price
-
-
-yahoo <- data.frame(datalist[1])
-yahoo < mutate(yahoo, times2 = AAPL.Adjusted*2 )
+yahoo <- data.frame(dl[1])
+yahoo <- mutate(yahoo, times2 = AAPL.Adjusted*2 )
 yahoo 
+
+
+# ways to look at the list (uncomment to try)
+# str(dl)
+# unlist(dl)
+# flatten(dl)
+# dl[1]
+# dl[[1]]
+# dl
+
+
+# here is the original datalist
+dl
+
+for (i in 1:length(dl)){
+  
+  # turn list i into a dataframe
+  df =  data.frame(dl[i]) 
+  
+  # multiply the 6th column of data times 2 and put into a new column 'times2'
+  df$times2 <- df[[6]]*2
+  
+  # turn the dataframe back into a list
+  df <- list(df)
+  
+  # replace the original list 'i' with the modified list
+  dl[i] <- df
+
+  }
+
+# the modified datalist
+dl
+
