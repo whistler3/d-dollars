@@ -52,7 +52,7 @@ library(RColorBrewer)
 library(wordcloud2)
 
 library(quantmod) # Financial library
-library(rmarkdown)
+# library(rmarkdown)
 
 # library(dtplyr)
 
