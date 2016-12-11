@@ -5,7 +5,7 @@
 # output:rmarkdown::html_vignette
 # ---
   # remove all from memory -----
-rm(list=ls())
+#  rm(list=ls())
 
 
 ### Load Libraries and functions
