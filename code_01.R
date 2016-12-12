@@ -15,6 +15,7 @@ dl = list()
 #STEP 1: Master List
 symbols = c('AAPL','GOOG','EMAN')
 
+
 #'### ------------------------------------------------------------------------
 #STEP2: Creat a data list of stocks which can be succesfully found on yahoo( Many fail)
 # As of 0.4-0, ‘getSymbols’ uses env=parent.frame() and
@@ -29,17 +30,18 @@ symbols = c('AAPL','GOOG','EMAN')
    symbols[i]-> symbol
    
    # specify the "from" date to desired start date
-   tryit <- try(getSymbols(symbol,from="2016-01-01", src='yahoo', auto.assign=FALSE))
+   tryit <- try(getSymbols(symbol,from=Sys.Date()-60, src='yahoo', auto.assign=FALSE))
    
    if(inherits(tryit, "try-error")){
      i <- i+1
      
-     #renive line below should not be need now that auto.assign is set to false above
+     #remove line below should not be need now that auto.assign is set to false above
      #remove(list = symbols[i])
      
    } else {
      dl[[i]] <-tryit #Add stock data to list
-     
+     attr(dl[[i]],'symbol') <- symbol
+     attr
      rm(symbol)
    }
  }
@@ -49,16 +51,46 @@ symbols = c('AAPL','GOOG','EMAN')
 #STEP3 Compute Signal Data for all Stock
 # Goes throught the list of symbol data, Compusting the RSI values from the close price
 #    and add the values to each xts set of symbol data.
+ 
  for(i in 1:length(dl)) {
- #Generate and merge RSI data to xts objelct
- #This method is using the Cl() function to find the close data
-   dl[[i]] <- merge (dl[[i]],RSI(Cl(dl[[i]])))
    
+  #Generate and merge RSI data to xts objelct
+  #This method is using the Cl() function to find the close data
+  dl[[i]] <- merge (dl[[i]],RSI(Cl(dl[[i]]),n=9))
+ 
+  #Now take the RSI Data and apply a filter algorithm  to see if the RSI value ever dipped below 50
+  RSI_Threshold<-dl[[i]][,"EMA"]
+  
+  #Apply the threshold algorithm to all EMA data row by row
+  RSI_Threshold<-vapply(RSI_Threshold, function(x){ifelse(x<50,1,0)},FUN.VALUE = numeric(nrow(RSI_Threshold)))
+  
+  #Rename the column to RSI Threshold so it can be found again in the xts object
+  colnames(RSI_Threshold) <-"RSI_Threshold"
+  
+  #Merge the threshold data back inthe the xts object
+  dl[[i]] <- merge (dl[[i]],RSI_Threshold)
+  
+  #If RSI threshold was met in the last 10 days add the stock to the interesting list.
+  if(1 %in% last(dl[[i]],"10 days")){
+    #TODO: ADD THE SYMBOL NAME TO A LIST OF SYMBOLS OF INTEREST
+    #      HINT... THE SYMBOL IS AN ATTRIBUTE IN THE XTS OBJECT.
+  }
+  
+  rm(RSI_Threshold)
+   
+#COMMENETED OUT UNTIL ITS USEFUL
  #Generate and merge MACD ( macd and signal column) data to xts object
  #This method is using [,"Close"] to find the close data
-   dl[[i]] <- merge(dl[[i]], MACD( dl[[3]][,"Close"], 12, 26, 9, maType="EMA" ))
- }  
-
+   #dl[[i]] <- merge(dl[[i]], MACD( dl[[i]][,"Close"], 12, 26, 9, maType="EMA" ))
+   
+   
+ }#end of for(i in 1:length(dl))
+ 
+ #'### ------------------------------------------------------------------------
+ # END OF PROGRAM #############################################################
+ ##############################################################################
+ 
+ 
 # ways to look at the list (uncomment to try)
 # str(dl)
 # unlist(dl)
