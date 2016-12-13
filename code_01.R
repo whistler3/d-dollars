@@ -56,22 +56,30 @@ symbols = c('AAPL','GOOG','EMAN')
 # STEP3 Compute Signal Data for all Stock
 # Goes throught the list of symbol data, Compusting the RSI values from the 
 # close price and add the values to each xts set of symbol data.
+
  
- for( i in 1:length(dl)) {
+ for(i in 1:length(dl)) {
   # i = 1 
    
   # Generate and merge RSI data to xts objelct
   # This method is using the Cl() function to find the close data
+  # CL() is used to extract and transform 'OHLC' time series columns
+  # RSI() is the Relative Strength Index
+  
   dl[[i]] <- merge(dl[[i]], RSI(Cl(dl[[i]]), n = 9))
   
-  dl
+  # dl[i]
+  
   # Now take the RSI Data and apply a filter algorithm  to see if the RSI 
-  # value ever dipped below 50
-  RSI_Threshold <- dl[[i]][,"EMA"]
+  # value ever dipped below 50 
+  # ?? what is EMA?
+  # dl[[1]][,"EMA"]
+  
+  RSI_Threshold <- dl[[i]][ ,"EMA"]
   
   # Apply the threshold algorithm to all EMA data row by row
   RSI_Threshold <- vapply(RSI_Threshold, 
-                          function(x){ifelse(x < 50, 1, 0)},
+                          function(x){ ifelse( x < 50, 1, 0) },
                           FUN.VALUE = numeric(nrow(RSI_Threshold)))
   
   # Rename the column to RSI Threshold so it can be found again in the xts object
@@ -80,13 +88,39 @@ symbols = c('AAPL','GOOG','EMAN')
   # Merge the threshold data back inthe the xts object
   dl[[i]] <- merge(dl[[i]], RSI_Threshold)
   
-  # If RSI threshold was met in the last 10 days add the stock to the interesting list.
-  if( 1 %in% last(dl[[i]], "10 days")){
-    # TODO: ADD THE SYMBOL NAME TO A LIST OF SYMBOLS OF INTEREST
-    #      HINT... THE SYMBOL IS AN ATTRIBUTE IN THE XTS OBJECT.
-  }
+  # If RSI threshold was met in the last 10 days add the stock to the 
+  # interesting list.
+  # append any stocks that meet the RSI threshold withing the last ten days
+  symbol[i] <- 
+    
+    # convert the xts to a dataframe with the symbol as a column
+    data.frame(dl[[i]], symbol = attr(dl[[i]], 'symbol')) %>%
+    
+    # keep the last ten rows in the dataframe
+    tail(n = 10) %>%
+    
+    # group_by the symbol (there is only one symbol, but if I don't use 
+    # group_by, the summarise will drop the column)
+    group_by(symbol) %>%
+    
+    # sum up the ten RSI_thresholds
+    summarise(rsi_sum = sum(RSI_Threshold)) %>%
+    
+    # keep the stock if at least one day it was above the threshold
+    filter(rsi_sum > 1) %>%
+    
+    # keep just the symbol column
+    select(symbol) %>%
+    
+    # paste the value in the symbol column
+    paste(.$symbol)
+ 
+  # if( 1 %in% last(dl[[i]], n = 10)){
+  #   # TODO: ADD THE SYMBOL NAME TO A LIST OF SYMBOLS OF INTEREST
+  #   #      HINT... THE SYMBOL IS AN ATTRIBUTE IN THE XTS OBJECT.
+  # }
   
-  rm(RSI_Threshold)
+  # rm(RSI_Threshold)
    
 # COMMENETED OUT UNTIL ITS USEFUL
  # Generate and merge MACD ( macd and signal column) data to xts object
@@ -95,6 +129,10 @@ symbols = c('AAPL','GOOG','EMAN')
    
    
  }#end of for(i in 1:length(dl))
+ 
+
+ symbol
+
  
  #'### ------------------------------------------------------------------------
  # END OF PROGRAM #############################################################
