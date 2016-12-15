@@ -57,10 +57,18 @@ symbols = c('AAPL','GOOG','EMAN')
 # Goes throught the list of symbol data, Compusting the RSI values from the 
 # close price and add the values to each xts set of symbol data.
 rm(symbol)
+
+get_interesting_symbols <- function(symbols = c('AAPL','GOOG','EMAN')){
+  
+ symbols = c('AAPL','GOOG','EMAN')
  symbol <- list()
+
+ 
  
  for(i in 1:length(dl)) {
-  # i = 1 
+  
+   
+   # i = 1 
    
   # Generate and merge RSI data to xts objelct
   # This method is using the Cl() function to find the close data
@@ -128,9 +136,11 @@ rm(symbol)
  }#end of for(i in 1:length(dl))
  
 symbol
-symbol[2]
+symbol[[2]]
 
 flatten(symbol)
+  
+}
  
  #'### ------------------------------------------------------------------------
  # END OF PROGRAM #############################################################
