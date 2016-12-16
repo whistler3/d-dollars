@@ -9,65 +9,64 @@
 options(width = 200)
 
 rm(list=ls())
-dl = list() 
 
 #'### ------------------------------------------------------------------------
 # STEP 1: Master List
-symbols = c('AAPL','GOOG','EMAN')
+
 
 
 #'### ------------------------------------------------------------------------
 # STEP2: Creat a data list of stocks which can be succesfully found on yahoo
 # ( Many fail)
-# As of 0.4-0, ‘getSymbols’ uses env=parent.frame() and
-# auto.assign=TRUE by default.
-# 
-# This  behavior  will be  phased out in 0.5-0  when the call  will
-# default to use auto.assign=FALSE. getOption("getSymbols.env") and 
-# getOptions("getSymbols.auto.assign") are now checked for alternate defaults
 
- for( i in 1:length(symbols)) {
-   
-   symbols[i] -> symbol
-   
-   # specify the "from" date to desired start date
-   tryit <- try(getSymbols(symbol, 
-                           from = Sys.Date() - 60, 
-                           src = 'yahoo', auto.assign = FALSE))
-   
-   if( inherits(tryit, "try-error")){
-     i <- i + 1
+get_stock_data_list <- function(symbols = c('AAPL','GOOG','EMAN')){
+# returns a data list with containing the data from somes stocks of interest
+  dl <- list()
+  # uncomment symbols to test the function from within
+  # symbols = c('AAPL','GOOG','EMAN')
+
+   for(i in 1:length(symbols)) {
      
-     # remove line below should not be need now that auto.assign is set to false above
-     # remove(list = symbols[i])
-   } 
-   
-   else {
-     # Add stock data to list
-     dl[[i]] <- tryit 
-     attr(dl[[i]], 'symbol') <- symbol
-     attr
-     rm(symbol)
+     symbols[i] -> symbol
+     
+     # specify the "from" date to desired start date
+     tryit <- try(getSymbols(symbol, 
+                             from        = Sys.Date() - 60, 
+                             src         = 'yahoo', 
+                             auto.assign = FALSE))
+     
+     if(inherits(tryit, "try-error")){
+       i <- i + 1
+     } 
+     
+     else {
+       # Add stock data to list
+       dl[[i]] <- tryit 
+       attr(dl[[i]], 'symbol') <- symbol
+       attr
+       rm(symbol)
+     }
    }
- }
- rm(tryit) # drop tryit from memory
+  
+  return(dl)
+}
+
+symbols = c('AAPL','GOOG','EMAN')
+dl <- get_stock_data_list(symbols)
 
 #'### ------------------------------------------------------------------------
 # STEP3 Compute Signal Data for all Stock
 # Goes throught the list of symbol data, Compusting the RSI values from the 
 # close price and add the values to each xts set of symbol data.
-rm(symbol)
 
-get_interesting_symbols <- function(symbols = c('AAPL','GOOG','EMAN')){
+get_interesting_symbols <- function(dlist = dl){
   
- symbols = c('AAPL','GOOG','EMAN')
+ # uncomment to test the function from within  
+ dlist <- dl  
  symbol <- list()
 
  
- 
- for(i in 1:length(dl)) {
-  
-   
+ for(i in 1:length(dlist)){
    # i = 1 
    
   # Generate and merge RSI data to xts objelct
@@ -75,16 +74,14 @@ get_interesting_symbols <- function(symbols = c('AAPL','GOOG','EMAN')){
   # CL() is used to extract and transform 'OHLC' time series columns
   # RSI() is the Relative Strength Index
   
-  dl[[i]] <- merge(dl[[i]], RSI(Cl(dl[[i]]), n = 9))
-  
-  # dl[i]
+  dlist[[i]] <- merge(dlist[[i]], RSI(Cl(dlist[[i]]), n = 9))
   
   # Now take the RSI Data and apply a filter algorithm  to see if the RSI 
   # value ever dipped below 50 
   # ?? what is EMA?
-  # dl[[1]][,"EMA"]
+  # dlist[[1]][,"EMA"]
   
-  RSI_Threshold <- dl[[i]][ ,"EMA"]
+  RSI_Threshold <- dlist[[i]][ ,"EMA"]
   
   # Apply the threshold algorithm to all EMA data row by row
   RSI_Threshold <- vapply(RSI_Threshold, 
@@ -95,15 +92,17 @@ get_interesting_symbols <- function(symbols = c('AAPL','GOOG','EMAN')){
   colnames(RSI_Threshold) <- "RSI_Threshold"
   
   # Merge the threshold data back inthe the xts object
-  dl[[i]] <- merge(dl[[i]], RSI_Threshold)
+  dlist[[i]] <- merge(dlist[[i]], RSI_Threshold)
   
   # If RSI threshold was met in the last 10 days add the stock to the 
   # interesting list.
   # append any stocks that meet the RSI threshold withing the last ten days
+  # symbol <- list()
+  # i=1
+  
   symbol[[i]] <- 
-    
     # convert the xts to a dataframe with the symbol as a column
-    data.frame(dl[[i]], symbol = attr(dl[[i]], 'symbol')) %>%
+    data.frame(dlist[[i]], symbol = attr(dlist[[i]], 'symbol')) %>%
     
     # keep the last ten rows in the dataframe
     tail(n = 10) %>%
@@ -118,30 +117,27 @@ get_interesting_symbols <- function(symbols = c('AAPL','GOOG','EMAN')){
     # keep the stock if at least one day it was above the threshold
     filter(rsi_sum > 0) %>%
     
-    # keep just the symbol column
-    # paste(.$symbol)
     select(symbol) %>%
-   
-    # paste the value in the symbol column
-    .$symbol[1,]
-    # flatten()
+    
+    # keep just the symbol column
+    paste(.$symbol)
+ }
+
+  # the symbols is a list of tables
+  # dply =  For each element of a list, apply function then combine results into a 
+  # data frame
+  symbol <- ldply(symbol, data.frame[,-1], .progress = 'text')
+  
+  return(symbol)
+
+}
  
-   
+symbol_list <- get_interesting_symbols(dl)     
+symbol_list
 # COMMENETED OUT UNTIL ITS USEFUL
  # Generate and merge MACD ( macd and signal column) data to xts object
  # This method is using [,"Close"] to find the close data
-   # dl[[i]] <- merge(dl[[i]], MACD( dl[[i]][,"Close"], 12, 26, 9, maType="EMA" ))
-   
-   
- }#end of for(i in 1:length(dl))
- 
-symbol
-symbol[[2]]
-
-flatten(symbol)
-  
-}
- 
+   # dlist[[i]] <- merge(dlist[[i]], MACD( dlist[[i]][,"Close"], 12, 26, 9, maType="EMA" ))
  #'### ------------------------------------------------------------------------
  # END OF PROGRAM #############################################################
  ##############################################################################

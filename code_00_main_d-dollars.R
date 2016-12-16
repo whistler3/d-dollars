@@ -5,7 +5,7 @@
 # output:rmarkdown::html_vignette
 # ---
   # remove all from memory -----
-#  rm(list=ls())
+ rm(list=ls())
 
 
 ### Load Libraries and functions
@@ -24,7 +24,9 @@
 # library(corrplot)
 # library(slam)
 # library(rmarkdown)
-# library(dtplyr)
+library(plyr)
+ # library(dtplyr)
+library(data.table)
   
 library(magrittr)
 library(tidyverse)
@@ -38,7 +40,6 @@ library(pander)
 library(readxl)
 library(NLP)
 library(tm)
-library(data.table)
 library(rlist)
 library(wordcloud)
 library(RColorBrewer)
