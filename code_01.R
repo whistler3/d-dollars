@@ -134,7 +134,10 @@ get_interesting_symbols <- function(dlist = dl){
  
 symbol_list <- get_interesting_symbols(dl)     
 symbol_list
+<<<<<<< HEAD
 
+=======
+>>>>>>> 55ff6717785a95b5c8a9f4ca63d1f052ea44b820
 # COMMENETED OUT UNTIL ITS USEFUL
  # Generate and merge MACD ( macd and signal column) data to xts object
  # This method is using [,"Close"] to find the close data
