@@ -1,9 +1,9 @@
-# ---
-# title:"d-dollars"
-# author:"Cindy Semrau"
-# date:"`r Sys.Date()`"
-# output:rmarkdown::html_vignette
-# ---
+---
+title:"d-dollars"
+author:"Cindy Semrau"
+date:"`r Sys.Date()`"
+output:rmarkdown::html_vignette
+---
   # remove all from memory -----
  rm(list=ls())
 
@@ -24,10 +24,37 @@
 # library(corrplot)
 # library(slam)
 # library(rmarkdown)
+
+
+# library(plyr)
+# library(data.table)
+#  library(dtplyr)
+#   
+# library(tidyverse)
+# library(lubridate)
+# library(stringr)
+# library(forcats)
+# library(modelr)
+# library(broom)
+# # library(purrr)
+# library(pander)
+# library(readxl)
+# # library(NLP)
+# library(tm)
+# library(rlist)
+# library(wordcloud)
+# library(RColorBrewer)
+# library(wordcloud2)
+# 
+# library(quantmod) # Financial library
+# library(magrittr)
+#   
+# rm(list=ls())
+
 library(plyr)
- # library(dtplyr)
+library(dtplyr)
 library(data.table)
-  
+
 library(magrittr)
 library(tidyverse)
 library(lubridate)
@@ -46,7 +73,9 @@ library(RColorBrewer)
 library(wordcloud2)
 
 library(quantmod) # Financial library
-  rm(list=ls())
-  
+rm(list=ls())
+
 source('~/RStudioWorkspace/d-dollars/code_01.R', echo=TRUE)
+
+source("code_01.R")
 
