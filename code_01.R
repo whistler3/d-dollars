@@ -19,7 +19,7 @@ rm(list=ls())
 # STEP2: Creat a data list of stocks which can be succesfully found on yahoo
 # ( Many fail)
 
-get_stock_data_list <- function(symbols = c('AAPL','GOOG','EMAN')){
+get_stock_data_list <- function(symbols = c('AAPL','GOOG','EMAN'), days = 90){
 # returns a data list with containing the data from somes stocks of interest
   dl <- list()
 
@@ -32,7 +32,7 @@ get_stock_data_list <- function(symbols = c('AAPL','GOOG','EMAN')){
      
      # specify the "from" date to desired start date
      tryit <- try(getSymbols(symbol, 
-                             from        = Sys.Date() - 60, 
+                             from        = Sys.Date() - days, 
                              src         = 'yahoo', 
                              auto.assign = FALSE))
      
@@ -61,25 +61,26 @@ dl <- get_stock_data_list(symbols)
 # Goes throught the list of symbol data, Compusting the RSI values from the 
 # close price and add the values to each xts set of symbol data.
 
-get_dlist <- function(dlist = dl){
+get_dlist <- function(dlist = dl, periods = 9, sell_below = 30, buy_above = 70){
   
  # uncomment to test the function from within  
- # dlist <- dl
+  # dlist <- dl
+  # periods = 9
+  # sell_below = 30
+  # buy_above = 70
  
  for(i in 1:length(dlist)){
-      # i = 1
+   # i = 1
    
   # Generate and merge RSI data to xts objelct
   # This method is using the Cl() function to find the close data
   # CL() is used to extract and transform 'OHLC' time series columns
   # RSI() is the Relative Strength Index
   
-  dlist[[i]] <- merge(dlist[[i]], RSI(Cl(dlist[[i]]), n = 9))
+  dlist[[i]] <- merge(dlist[[i]], RSI(Cl(dlist[[i]]), n = periods))
   
   # Now take the RSI Data and apply a filter algorithm  to see if the RSI 
   # value ever dipped below 50 
-  # ?? what is EMA?
-  # dlist[[1]][,"EMA"]
   
   RSI_Threshold <- dlist[[i]][ ,"EMA"]
   
@@ -87,12 +88,39 @@ get_dlist <- function(dlist = dl){
   RSI_Threshold <- vapply(RSI_Threshold, 
                           function(x){ ifelse( x < 50, 1, 0) },
                           FUN.VALUE = numeric(nrow(RSI_Threshold)))
+  # RSI_Threshold
+  
+  RSI_sell <- dlist[[i]][ ,"EMA"]
+  
+  RSI_sell      <- vapply( RSI_sell, 
+                           function(x){ ifelse( x < sell_below, 1, 0) },
+                           FUN.VALUE = numeric(nrow(RSI_sell)))
+  # RSI_sell
+  
+  RSI_buy <- dlist[[i]][ ,"EMA"]
+  
+  RSI_buy      <- vapply( RSI_buy, 
+                           function(x){ ifelse( x > buy_above, 1, 0) },
+                           FUN.VALUE = numeric(nrow(RSI_buy)))
+  # RSI_buy
   
   # Rename the column to RSI Threshold so it can be found again in the xts object
   colnames(RSI_Threshold) <- "RSI_Threshold"
+  colnames(RSI_sell)      <- "RSI_sell"
+  colnames(RSI_buy)       <- "RSI_buy"
   
   # Merge the threshold data back inthe the xts object
-  dlist[[i]] <- merge(dlist[[i]], RSI_Threshold)
+  dlist[[i]] <- merge(dlist[[i]], RSI_Threshold )
+  dlist[[i]] <- merge(dlist[[i]], RSI_sell)
+  dlist[[i]] <- merge(dlist[[i]], RSI_buy)
+  
+  # Generate and merge MACD ( macd and signal column) data to xts object
+  # This method is using [,"Close"] to find the close data
+  dlist[[i]] <- merge(dlist[[i]], MACD( dlist[[i]][,"Close"], 
+                                        nFast = 12, 
+                                        nSlow = 26, 
+                                        nSig = 9, 
+                                        maType = "EMA" ))
  }
  
  return(dlist)
@@ -100,7 +128,7 @@ get_dlist <- function(dlist = dl){
   
  datalist <- get_dlist(dl)
  datalist
- 
+
  #'### ------------------------------------------------------------------------
  # 
   # If RSI threshold was met in the last 10 days add the stock to the 
@@ -150,10 +178,7 @@ symbols
  
     
 
-# COMMENETED OUT UNTIL ITS USEFUL
- # Generate and merge MACD ( macd and signal column) data to xts object
- # This method is using [,"Close"] to find the close data
-   # dlist[[i]] <- merge(dlist[[i]], MACD( dlist[[i]][,"Close"], 12, 26, 9, maType="EMA" ))
+
  #'### ------------------------------------------------------------------------
  # END OF PROGRAM #############################################################
  ##############################################################################
