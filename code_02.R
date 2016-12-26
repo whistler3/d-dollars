@@ -25,123 +25,144 @@ add_amount <- function(balance, amount){
   return(balance2)
 }
 
-buy_shares <- function(shares, balance, price, buy_percent){
-  shares2 <- shares + round(buy_percent*(balance/price), digits = 0)
-  shares2 <- as.integer(shares2)
+transact_shares <- function(shares, balance, price, percent, transaction = "buy"){
+  # shares = 1
+  # check_account = 1000
+  # price = 10
+  # percent = .1
+  # transaction = "sell"
+
+  n_shares <- round(percent*check_account/price, digits = 0)
+
+ shares2 <-   switch(transaction,
+           buy  = shares + n_shares,
+           sell = if(shares >= n_shares){ shares - n_shares} else {0})
+          
+  # shares2
   return(shares2)
 }
 
-balance_after_sale <- function(shares, balance,  price, sell_percent){
-  sell_n_shares <- round(buy_percent*(balance/price), digits = 0)
-  # shares_remaining <- shares - sell_n_shares
-  balance2 <- balance + price * sell_n_shares
+checking_account <- function(shares = 0, balance = 0,  price = 0, percent = 0, 
+                             transaction = "buy/sell/deposit/withdraw", 
+                             amount = 200){
+  # shares = 1
+  # balance = 1000
+  # price = 10
+  # percent = .1
+  # transaction = "deposit"
+  # amount = 200
+  
+  n_shares <- round(percent*balance/price, digits = 0)
+  n_shares
+  
+  balance2 <- 
+    switch(transaction,
+           buy      = balance - n_shares*price,
+           sell     = if(shares >= n_shares){ balance + n_shares*price} else{
+                      balance + shares*price},
+           deposit  = balance + amount,
+           withdraw = balance - amount
+           )
+  balance2
   return(balance2)
 }
 
-balance_after_buy <- function(shares, balance,  price, buy_percent){
-  buy_n_shares <- round(buy_percent*(balance/price), digits = 0)
-  balance2 <- balance - price * buy_n_shares
-  return(balance2)
-}
 
-sell_shares <- function(shares, balance,  price, sell_percent){
-  sell_n_shares <-  shares - round(buy_percent*(balance/price), digits = 0)
-  shares_remaining <- shares - sell_n_shares
-  return(shares_remaining)
-}
-# 
-# for(i in 2:nrow(dl)){
-#   # every day we get $200 added to the balance 
-#   dl$balance[i] <- add_amount(dl$balance[i-1] , 200)
-# }
 
 i = 1
 dl <- data.frame(dl2[i])
- dl$balance <- 2000
+ dl$check_account <- 2000
  dl$shares  <- 0
- dl$hold.cash <- 2000
- dl$only.buy.balance <- 2000
- dl$only.buy.shares <- 0
+ dl$hold.cash.balance <- 2000
+ dl$hold.stock.balance <- 2000
+ dl$hold.stock.shares <- 0
 
  
 dl <- dl %>%
   mutate(date    = row.names(.)) %>%
-  select(date, price = 4, RSI_buy, RSI_sell, balance, shares, hold.cash, 
-         only.buy.shares, only.buy.balance) %>%
+  select(date, price = 4, RSI_buy, RSI_sell, check_account, shares, hold.cash.balance, 
+         hold.stock.shares, hold.stock.balance) %>%
   mutate(date    = ymd(date)) %>%
    na.omit()
 
 for (i in 2:nrow(dl)){
   # i = 15
   percent = .1
-  
+ 
   # every day we get $200 added to our hold cash
-  dl$hold.cash[i] <- add_amount(dl$hold.cash[i-1] , 200)
-  dl$hold.cash[i]
+  # dl$hold.cash.balance[i] <- add_amount(dl$hold.cash.balance[i-1] , 200)
   
-  # every day we get $200 added to the balance
-  dl$balance[i] <- add_amount(dl$balance[i-1] , 200)
-  dl$balance[i]
-
+  dl$hold.cash.balance[i] <- checking_account(balance = dl$hold.cash.balance[i-1],
+                                      transaction = "deposit", amount = 200)
+  dl$hold.cash.balance[i]
+  
+  # every day we get $200 added to the check_account
+  dl$check_account[i] <- checking_account(balance = dl$check_account[i-1],
+                                          transaction = "deposit", amount = 200)
+  dl$check_account[i]
+  # 
   # every day we get $200 added to the only buy balance
-  dl$only.buy.balance[i] <- add_amount(dl$only.buy.balance[i-1] , 200)
-  dl$only.buy.balance[i]
+  dl$hold.stock.balance[i] <- checking_account(balance = dl$hold.stock.balance[i-1],
+                                             transaction = "deposit", amount = 200)
+  dl$hold.stock.balance[i]
 
   # every day we buy if able
-  if (dl$only.buy.balance[i] > dl$price[i])
-    dl$only.buy.shares[i] <- buy_shares(shares = dl$only.buy.shares[i-1],
-                               balance = dl$only.buy.balance[i],
-                               price = dl$price[i],
-                               buy_percent = .95) else dl$only.buy.shares[i] <- dl$only.buy.shares[i-1]
-
-  if (dl$only.buy.balance[i] > dl$price[i])
-    dl$only.buy.balance[i] <- balance_after_buy(shares  = dl$only.buy.shares[i],
-                                       balance = dl$only.buy.balance[i],
-                                       price   = dl$price[i],
-                                       buy_percent = .95)
+  dl$hold.stock.shares[i] <- transact_shares(shares = dl$hold.stock.shares[i-1], 
+                                             balance = dl$hold.stock.balance[i],
+                                             price = dl$price[i],
+                                             percent = .95,
+                                             transaction = "buy")
+                                             
   
-  
-  # do we buy anything today?
-  if (dl$RSI_buy[i] > 0 && dl$balance[i] > dl$price[i]) 
-      dl$shares[i] <- buy_shares(shares = dl$shares[i-1], 
-                                balance = dl$balance[i], 
-                                price = dl$price[i],
-                                buy_percent = .5) else dl$shares[i] <- dl$shares[i-1]
-
-    if (dl$RSI_buy[i] > 0 && dl$balance[i] > dl$price[i])
-       dl$balance[i] <- balance_after_buy(shares  = dl$shares[i],
-                                          balance = dl$balance[i],
-                                          price   = dl$price[i], 
-                                          buy_percent = .5)# else(dl$balance <- dl$balance[i])
-  
-  # do we sell anything today?
-  if (dl$RSI_sell[i] > 0)
-    dl$shares[i] <- sell_shares(shares       = dl$shares[i],
-                                balance      = dl$balance[i],
-                                price        = dl$price[i],
-                                sell_percent = .5) else dl$shares[i] <- dl$shares[i-1]
-
-  if (dl$RSI_sell[i] > 0)
-    dl$balance[i] <- balance_after_sale(shares = dl$shares[i],
-                                        balance = dl$balance[i-1],
-                                        price = dl$price[i],
-                                        sell_percent = .5) else(dl$balance[i-1])
+  # # 
+  # if (dl$hold.stock.balance[i] > dl$price[i])
+  #   dl$hold.stock.balance[i] <- balance_after_buy(shares  = dl$hold.stock.shares[i],
+  #                                      check_account = dl$hold.stock.balance[i],
+  #                                      price   = dl$price[i],
+  #                                      percent = .95)
+  # 
+  # 
+  # # do we buy anything today?
+  # if (dl$RSI_buy[i] > 0 && dl$check_account[i] > dl$price[i]) 
+  #     dl$shares[i] <- buy_shares(shares = dl$shares[i-1], 
+  #                               check_account = dl$check_account[i], 
+  #                               price = dl$price[i],
+  #                               percent = percent) else dl$shares[i] <- dl$shares[i-1]
+  # 
+  #   if (dl$RSI_buy[i] > 0 && dl$check_account[i] > dl$price[i])
+  #      dl$check_account[i] <- check_account_after_buy(shares  = dl$shares[i],
+  #                                         check_account = dl$check_account[i],
+  #                                         price   = dl$price[i], 
+  #                                         percent = percent)# else(dl$check_account <- dl$check_account[i])
+  # 
+  # # do we sell anything today?
+  # if (dl$RSI_sell[i] > 0 )
+  #   dl$shares[i] <- sell_shares(shares       = dl$shares[i],
+  #                               check_account      = dl$check_account[i],
+  #                               price        = dl$price[i],
+  #                               percent = percent) else dl$shares[i] <- dl$shares[i-1]
+  # 
+  # if (dl$RSI_sell[i] > 0)
+  #   dl$check_account[i] <- check_account_after_sale(shares = dl$shares[i],
+  #                                       check_account = dl$check_account[i],
+  #                                       price = dl$price[i],
+  #                                       percent = percent) else(dl$check_account[i-1])
 }
 
 
-dl <- mutate(dl, only.buy.share.value = only.buy.shares * price) %>%
-  mutate(buy.sell.value = balance + price * shares)
 
 head(dl, n=20)
 
+dl <- mutate(dl, only.buy.share.value = hold.stock.shares * price) %>%
+  mutate(buy.sell.value = check_account + price * shares)
 
-ggplot(dl, aes(x = date, y = hold.cash)) + geom_line( color = "blue") +
+ggplot(dl, aes(x = date, y = hold.cash.balance)) + geom_line( color = "blue", show.legend = TRUE) +
   geom_line(aes( x = date, y = only.buy.share.value), color = "red") +
-  geom_line(aes( x = date, y = buy.sell.value), color = "green")
+  geom_line(aes( x = date, y = buy.sell.value), color = "green") 
 
 
 
-
+write.csv(dl, file =  "./report/ddollars.csv")
 
 
 # # Convert factors to characters
