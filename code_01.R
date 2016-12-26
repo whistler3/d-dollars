@@ -61,13 +61,14 @@ dl <- get_stock_data_list(symbols)
 # Goes throught the list of symbol data, Compusting the RSI values from the 
 # close price and add the values to each xts set of symbol data.
 
-get_dlist <- function(dlist = dl, periods = 9, sell_below = 30, buy_above = 70){
+get_dlist <- function(dlist = dl, periods = 9, 
+                      sell_above = 45, buy_below = 40){
   
  # uncomment to test the function from within  
   # dlist <- dl
   # periods = 9
-  # sell_below = 30
-  # buy_above = 70
+  # sell_above = 70
+  # buy_below = 35
  
  for(i in 1:length(dlist)){
    # i = 1
@@ -93,16 +94,16 @@ get_dlist <- function(dlist = dl, periods = 9, sell_below = 30, buy_above = 70){
   RSI_sell <- dlist[[i]][ ,"EMA"]
   
   RSI_sell      <- vapply( RSI_sell, 
-                           function(x){ ifelse( x < sell_below, 1, 0) },
+                           function(x){ ifelse( x > sell_above, 1, 0) },
                            FUN.VALUE = numeric(nrow(RSI_sell)))
-  # RSI_sell
+  RSI_sell
   
   RSI_buy <- dlist[[i]][ ,"EMA"]
   
   RSI_buy      <- vapply( RSI_buy, 
-                           function(x){ ifelse( x > buy_above, 1, 0) },
+                           function(x){ ifelse( x < buy_below, 1, 0) },
                            FUN.VALUE = numeric(nrow(RSI_buy)))
-  # RSI_buy
+  RSI_buy
   
   # Rename the column to RSI Threshold so it can be found again in the xts object
   colnames(RSI_Threshold) <- "RSI_Threshold"
@@ -116,18 +117,18 @@ get_dlist <- function(dlist = dl, periods = 9, sell_below = 30, buy_above = 70){
   
   # Generate and merge MACD ( macd and signal column) data to xts object
   # This method is using [,"Close"] to find the close data
-  dlist[[i]] <- merge(dlist[[i]], MACD( dlist[[i]][,"Close"], 
-                                        nFast = 12, 
-                                        nSlow = 26, 
-                                        nSig = 9, 
-                                        maType = "EMA" ))
+  # dlist[[i]] <- merge(dlist[[i]], MACD( dlist[[i]][,"Close"], 
+  #                                       nFast = 12, 
+  #                                       nSlow = 26, 
+  #                                       nSig = 9, 
+  #                                       maType = "EMA" ))
  }
  
  return(dlist)
 }
   
  datalist <- get_dlist(dl)
- datalist
+ head(datalist)
 
  #'### ------------------------------------------------------------------------
  # 
@@ -165,10 +166,12 @@ get_symbols <- function(dlist = datalist){
       select(symbol)
   }
   
-  # the symbols is a list of tables
-  # dply =  For each element of a list, apply function then combine results into a
-  # data frame
-   symbol <- plyr::ldply(symbol, data.frame, .progress = 'text')
+  # the symbols is a list of tables dply =  For each element of a list, apply
+  # function then combine results into a data frame
+
+  symbol <- unlist(symbol, use.names = TRUE, recursive = TRUE)
+ 
+  # symbol <- plyr::ldply(symbol, data.frame, .progress = 'text')
   return(symbol)
 }
 
@@ -182,7 +185,7 @@ symbols
  #'### ------------------------------------------------------------------------
  # END OF PROGRAM #############################################################
  ##############################################################################
-symbol <- attr(dlist[[1]], 'symbol')
+# symbol <- attr(dlist[[1]], 'symbol')
  
 # ways to look at the list (uncomment to try)
 # str(dl)
@@ -218,5 +221,7 @@ symbol <- attr(dlist[[1]], 'symbol')
 # STEP3 Compute Signal Data for all Stock
 # Goes throught the list of symbol data, Compusting the RSI values from the 
 # close price and add the values to each xts set of symbol data.
+
+
 
 
