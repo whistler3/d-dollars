@@ -19,7 +19,7 @@ rm(list=ls())
 # STEP2: Creat a data list of stocks which can be succesfully found on yahoo
 # ( Many fail)
 
-get_stock_data_list <- function(symbols = c('AAPL','GOOG','EMAN'), days = 90){
+get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN'), days = 90){
 # returns a data list with containing the data from somes stocks of interest
   dl <- list()
 
@@ -54,14 +54,14 @@ get_stock_data_list <- function(symbols = c('AAPL','GOOG','EMAN'), days = 90){
 }
 
 symbols = c('AAPL','GOOG','EMAN')
-dl <- get_stock_data_list(symbols)
+dl <- get_stock_data(symbols)
 
 #'### ------------------------------------------------------------------------
 # STEP3 Compute Signal Data for all Stock
 # Goes throught the list of symbol data, Compusting the RSI values from the 
 # close price and add the values to each xts set of symbol data.
 
-get_dlist <- function(dlist = dl, periods = 9, 
+get_stock_thresholds <- function(dlist = dl, periods = 9, 
                       sell_above = 45, buy_below = 40){
   
  # uncomment to test the function from within  
@@ -127,7 +127,7 @@ get_dlist <- function(dlist = dl, periods = 9,
  return(dlist)
 }
   
- datalist <- get_dlist(dl)
+ datalist <- get_stock_thresholds(dl)
  head(datalist)
 
  #'### ------------------------------------------------------------------------
@@ -137,7 +137,7 @@ get_dlist <- function(dlist = dl, periods = 9,
   # append any stocks that meet the RSI threshold withing the last ten days
   # symbol <- list()
   # i=1
-get_symbols <- function(dlist = datalist){
+get_stocks_meeting_rsi_threshold <- function(dlist = datalist){
   dlist = datalist
   symbol <- list()
    
@@ -175,7 +175,7 @@ get_symbols <- function(dlist = datalist){
   return(symbol)
 }
 
-  symbols <- get_symbols(datalist)
+  symbols <- get_stocks_meeting_rsi_threshold(datalist)
 
 symbols
  
