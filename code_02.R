@@ -5,7 +5,7 @@ d_symbols <- get_stock_data_list(symbols)
 d_symbols
 
 datalist <- get_dlist(d_symbols, periods = 9, 
-                      sell_above = 45, buy_below = 40)
+                      sell_above = 55, buy_below = 35)
 
 datalist
 
@@ -26,19 +26,20 @@ add_amount <- function(balance, amount){
 }
 
 transact_shares <- function(shares, balance, price, percent, transaction = "buy"){
-  # shares = 1
-  # check_account = 1000
-  # price = 10
+  # shares = 0
+  # check_account = 3123
+  # price = 2.35
   # percent = .1
-  # transaction = "sell"
+  # transaction = "buy"
 
   n_shares <- round(percent*check_account/price, digits = 0)
+  n_shares
 
  shares2 <-   switch(transaction,
            buy  = shares + n_shares,
            sell = if(shares >= n_shares){ shares - n_shares} else {0})
           
-  # shares2
+   shares2
   return(shares2)
 }
 
@@ -71,95 +72,100 @@ checking_account <- function(shares = 0, balance = 0,  price = 0, percent = 0,
 
 i = 1
 dl <- data.frame(dl2[i])
- dl$check_account <- 2000
+ dl$check_account[1] <- 200
  dl$shares  <- 0
- dl$hold.cash.balance <- 2000
- dl$hold.stock.balance <- 2000
- dl$hold.stock.shares <- 0
+ dl$hold.cash.balance[1] <- 200
+ # dl$hold.stock.balance[1] <- 200
+ # dl$hold.stock.shares <- 0
 
+ dl
  
 dl <- dl %>%
   mutate(date    = row.names(.)) %>%
-  select(date, price = 4, RSI_buy, RSI_sell, check_account, shares, hold.cash.balance, 
-         hold.stock.shares, hold.stock.balance) %>%
+  select(date, price = 4, RSI_buy, RSI_sell, check_account, shares, hold.cash.balance) %>%#, 
+       #  hold.stock.shares, hold.stock.balance) %>%
   mutate(date    = ymd(date)) %>%
    na.omit()
 
 for (i in 2:nrow(dl)){
   # i = 15
   percent = .1
- 
-  # every day we get $200 added to our hold cash
-  # dl$hold.cash.balance[i] <- add_amount(dl$hold.cash.balance[i-1] , 200)
   
   dl$hold.cash.balance[i] <- checking_account(balance = dl$hold.cash.balance[i-1],
                                       transaction = "deposit", amount = 200)
-  dl$hold.cash.balance[i]
+  # dl$hold.cash.balance[i]
   
   # every day we get $200 added to the check_account
   dl$check_account[i] <- checking_account(balance = dl$check_account[i-1],
                                           transaction = "deposit", amount = 200)
-  dl$check_account[i]
-  # 
-  # every day we get $200 added to the only buy balance
+  #dl$check_account[i]
+
+  #every day we get $200 added to the only buy balance
   dl$hold.stock.balance[i] <- checking_account(balance = dl$hold.stock.balance[i-1],
                                              transaction = "deposit", amount = 200)
   dl$hold.stock.balance[i]
 
   # every day we buy if able
-  dl$hold.stock.shares[i] <- transact_shares(shares = dl$hold.stock.shares[i-1], 
-                                             balance = dl$hold.stock.balance[i],
-                                             price = dl$price[i],
-                                             percent = .95,
-                                             transaction = "buy")
-                                             
-  
-  # # 
-  # if (dl$hold.stock.balance[i] > dl$price[i])
-  #   dl$hold.stock.balance[i] <- balance_after_buy(shares  = dl$hold.stock.shares[i],
-  #                                      check_account = dl$hold.stock.balance[i],
-  #                                      price   = dl$price[i],
-  #                                      percent = .95)
+  # dl$hold.stock.shares[i] <- transact_shares(shares = dl$hold.stock.shares[i-1],
+  #                                            balance = dl$hold.stock.balance[i],
+  #                                            price = dl$price[i],
+  #                                            percent = .95,
+  #                                            transaction = "buy")
   # 
-  # 
-  # # do we buy anything today?
-  # if (dl$RSI_buy[i] > 0 && dl$check_account[i] > dl$price[i]) 
-  #     dl$shares[i] <- buy_shares(shares = dl$shares[i-1], 
-  #                               check_account = dl$check_account[i], 
-  #                               price = dl$price[i],
-  #                               percent = percent) else dl$shares[i] <- dl$shares[i-1]
-  # 
-  #   if (dl$RSI_buy[i] > 0 && dl$check_account[i] > dl$price[i])
-  #      dl$check_account[i] <- check_account_after_buy(shares  = dl$shares[i],
-  #                                         check_account = dl$check_account[i],
-  #                                         price   = dl$price[i], 
-  #                                         percent = percent)# else(dl$check_account <- dl$check_account[i])
-  # 
-  # # do we sell anything today?
-  # if (dl$RSI_sell[i] > 0 )
-  #   dl$shares[i] <- sell_shares(shares       = dl$shares[i],
-  #                               check_account      = dl$check_account[i],
-  #                               price        = dl$price[i],
-  #                               percent = percent) else dl$shares[i] <- dl$shares[i-1]
-  # 
-  # if (dl$RSI_sell[i] > 0)
-  #   dl$check_account[i] <- check_account_after_sale(shares = dl$shares[i],
-  #                                       check_account = dl$check_account[i],
-  #                                       price = dl$price[i],
-  #                                       percent = percent) else(dl$check_account[i-1])
-}
+  # dl$hold.stock.balance[i] <- checking_account(shares  = dl$hold.stock.shares[i-1],
+  #                                           balance = dl$hold.cash.balance[i],
+  #                                           price   = dl$price[i],
+  #                                           percent = .95,
+  #                                           transaction = "buy")
 
+                                             
+dl$shares[i]
+  # do we buy anything today?
+  if (dl$RSI_buy[i] > 0 ) #&& dl$check_account[i] > dl$price[i])
+      dl$shares[i] <- transact_shares(shares = dl$shares[i-1],
+                                balance = dl$check_account[i],
+                                price = dl$price[i],
+                                percent = percent,
+                                transaction = "buy"
+                                ) else dl$shares[i] <- dl$shares[i-1]
+
+
+    if (dl$RSI_buy[i] > 0 )#&& dl$check_account[i] > dl$price[i])
+       dl$check_account[i] <- checking_account(shares  = dl$shares[i],
+                                               balance = dl$check_account[i],
+                                               price   = dl$price[i],
+                                               percent = percent,
+                                               transaction = "buy")
+
+  # do we sell anything today?
+    if (dl$RSI_sell[i] > 0 ) #&& dl$shares[i] > 0)
+        dl$shares[i] <- transact_shares(shares = dl$shares[i-1],
+                                        balance = dl$check_account[i],
+                                        price = dl$price[i],
+                                        percent = percent,
+                                        transaction = "sell"
+                                        ) #else dl$shares[i] <- dl$shares[i-1]
+
+    if (dl$RSI_sell[i] > 0 ) #&& dl$shares[i] > 0)
+      dl$check_account[i] <- checking_account(shares  = dl$shares[i-1],
+                                              balance = dl$check_account[i],
+                                              price   = dl$price[i],
+                                              percent = percent,
+                                              transaction = "sell")
+
+}
 
 
 head(dl, n=20)
 
-dl <- mutate(dl, only.buy.share.value = hold.stock.shares * price) %>%
-  mutate(buy.sell.value = check_account + price * shares)
+dl <-      mutate(dl, total.value = check_account + price * shares)
 
-ggplot(dl, aes(x = date, y = hold.cash.balance)) + geom_line( color = "blue", show.legend = TRUE) +
-  geom_line(aes( x = date, y = only.buy.share.value), color = "red") +
-  geom_line(aes( x = date, y = buy.sell.value), color = "green") 
+tail(dl, n=20)
 
+ggplot(dl, aes(x = date, y = hold.cash.balance)) + 
+  geom_line( color = "blue", show.legend = TRUE) +
+  # geom_line(aes( x = date, y = hold.stock.value), color = "red") +
+  geom_line(aes( x = date, y = total.value), color = "green") 
 
 
 write.csv(dl, file =  "./report/ddollars.csv")
