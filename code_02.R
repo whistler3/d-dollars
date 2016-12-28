@@ -17,7 +17,7 @@ symbols <- get_stocks_meeting_rsi_threshold(stock_rsi)
 symbols
 
 # get the stock data for the stocks that meet the rsi threshold
-dl2 <- get_stock_data(symbols)
+dl2 <- get_stock_data(symbols, days = 120)
 
 # add the rsi threshold and buy & sell signals
 dl2 <- get_stock_thresholds(dl2)
@@ -92,6 +92,8 @@ head(dl)
 
 #'### -------------------------------
 # buy sell hold!!
+
+
 for (i in 2:nrow(dl)){
   # i = 2
   percent = .1
