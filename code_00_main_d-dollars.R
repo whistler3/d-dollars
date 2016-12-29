@@ -1,47 +1,29 @@
----
-title:"d-dollars"
-author:"Cindy Semrau"
-date:"`r Sys.Date()`"
-output:rmarkdown::html_vignette
----
-
 ### Load Libraries and functions
 # options(width = 150)
 # Load libraries -----
-# library(knitr)
-# library(xtable)
-# library(kable)
-# library(tables)
-# library(excel.link)
-# library(AppliedPredictiveModeling)
-# library(caret)
-# library(rpart)
-# library(partykit)
-# library(e1071)
-# library(corrplot)
-# library(slam)
-# library(rmarkdown)
-
+library(knitr)
+library(rmarkdown)
 library(tidyverse)
 library(lubridate)
 library(stringr)
-library(forcats)
+# library(forcats)
 library(modelr)
-library(broom)
+# library(broom)
 library(pander)
 library(readxl)
 library(NLP)
 library(tm)
 library(rlist)
-library(wordcloud)
-library(RColorBrewer)
-library(wordcloud2)
 library(quantmod) # Financial library
 
 # remove all from memory -----
 rm(list=ls())
 
+source("code_01_functions.R")
+source("code_02_model.R")
 
+# takes the output created by the budget chart tool in code_02_forecast and
+# manipulates it to create the data for the Tableau forecast variance tool
+rmarkdown::render("code_02_model.R",  output_dir = "./report")
 
-source("code_01.R")
-
+ 
