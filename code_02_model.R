@@ -1,40 +1,40 @@
-# learning about many models
+# learning about many models -----
 
-library(modelr)
-library(tidyverse)
-library(gapminder)
+# library(modelr)
+# library(tidyverse)
+# library(gapminder)
 
-gapminder
+# gapminder
+# 
+# gapminder %>%
+#   ggplot(aes(year, lifeExp, group = country)) +
+#   geom_line(alpha = 1/3)
+# 
+# # fit a model with linear trend
+# 
+# nz <- filter(gapminder, country == "New Zealand")
+# nz %>%
+#   ggplot(aes(year, lifeExp)) + geom_line() +
+#   ggtitle("Full data = ")
+# 
+# # create the model
+# nz_mod <- lm(lifeExp ~ year, data = nz)
+# nz %>%
+#   add_predictions(nz_mod) %>%
+#   ggplot(aes(year, pred)) + geom_line() +
+#   ggtitle("Linear trend + ")
+# 
+# 
+# # add the residuals
+# nz %>%
+#   add_residuals(nz_mod) %>%
+#   ggplot(aes(year, resid)) + 
+#   geom_hline(yintercept = 0, color = "white", size = 3) +
+#   geom_line() +
+#   ggtitle("Remaining pattern")
+# 
 
-gapminder %>%
-  ggplot(aes(year, lifeExp, group = country)) +
-  geom_line(alpha = 1/3)
-
-# fit a model with linear trend
-
-nz <- filter(gapminder, country == "New Zealand")
-nz %>%
-  ggplot(aes(year, lifeExp)) + geom_line() +
-  ggtitle("Full data = ")
-
-# create the model
-nz_mod <- lm(lifeExp ~ year, data = nz)
-nz %>%
-  add_predictions(nz_mod) %>%
-  ggplot(aes(year, pred)) + geom_line() +
-  ggtitle("Linear trend + ")
-
-
-# add the residuals
-nz %>%
-  add_residuals(nz_mod) %>%
-  ggplot(aes(year, resid)) + 
-  geom_hline(yintercept = 0, color = "white", size = 3) +
-  geom_line() +
-  ggtitle("Remaining pattern")
-
-
-
+#-----
 #'### ------------------------------------------------------------------------
 # given the following stocks.
 symbols = c('AAPL','GOOG','EMAN')
@@ -62,62 +62,11 @@ dl2 <- f2_get_stock_data(symbols, days = 120)
 dl2 <- f3_get_stock_thresholds(dl2)
 head(dl2)
 
-#'### ------------------------------------------------------------------------
 #' convert the stocks to a data frame, rename the columns, flatten and nest
-f5_flatten_and_nest_by_stock <- function(dl2){
-
-   dl <- dl2
-
-  for( i in 1:length(dl)) {
-   # i = 1
-    
-  # get the stock name
-  stock_name <- names(dl[[i]]) %>%
-    str_split( pattern = "\\.") %>% 
-    unlist() %>%
-    first()
-  
-  stock_name
-
-  # convert each xts object in the list to a dataframe
-  dl[[i]] <- as.data.frame(dl[[i]])
-  
-  # rename the columns for each dataframe
-  names(dl[[i]])
-  
-  colnames(dl[[i]]) <- c("open", "high", "low", "close", "volume", 
-                         "adjusted","ema", "rsi_threshold", "rsi_sell", "rsi_buy")
-  
-  # take the dates that are in the row names and make them a column in the dataframe.
-  # then add the stock name
-  dl[[i]] <- dl[[i]] %>%
-    mutate(date  = ymd(row.names(.))) %>%
-    mutate(stock = stock_name)
-  
-  }
-  # head(dl)
-  
-  # flatten the list of data frames into one dataframe
-
-  dl_flat <- list.rbind(dl)
-  
-  dl_flat <- na.omit(dl_flat)
-  head(dl_flat)
-
-  # nest by each stock
-  dl_nested <- dl_flat %>%
-    group_by(stock) %>%
-    nest()
-
-  # return(dl_flat)
-  return(dl_nested)
-}
-
 by_stock <- f5_flatten_and_nest_by_stock(dl2)
+head(by_stock)
 
-  # Now that we have our nested data frame, we’re in a good position to fit some
-  # models. We have a model-fitting function:
-
+# run the model
 f6_buy_sell_hold_model <- function(dl = df){
 
   # dl = dl3
@@ -209,26 +158,30 @@ f6_buy_sell_hold_model <- function(dl = df){
   
   }
 
-  # And we want to apply it to every data frame. The data frames are in a list,
-  # so we can use purrr::map() to apply country_model to each element:
-
-  # However, rather than leaving the list of models as a free-floating object, I
-  # think it’s better to store it as a column in the by_country data frame.
-  # Storing related objects in columns is a key part of the value of data
-  # frames, and why I think list-columns are such a good idea. In the course of
-  # working with these countries, we are going to have lots of lists where we
-  # have one element per country. So why not store them all together in one data
-  # frame?
-  # 
-  # In other words, instead of creating a new object in the global environment,
-  # we’re going to create a new variable in the by_stock data frame. That’s a
-  # job for dplyr::mutate():
-    
+# put the model into the by_stock data frame
 by_stock <- by_stock %>%
   mutate(model = map(data, f6_buy_sell_hold_model))
-
 by_stock$model[1]
 
 
 
-head(datalist)
+#'### ------------------------------------------------------------------------
+#' look at results
+by_stock
+
+stocks <- unnest(by_stock, model)
+
+
+ggplot(stocks, aes(x = date)) + 
+  geom_line(aes(y = cash.only.total), color = "blue") +
+  geom_line(aes( x = date, y = hold.stock.total), color = "red") +
+  geom_line(aes( x = date, y = investing.total), color = "green") +
+  facet_wrap(~ stock) + 
+  ggtitle(label = "total in dollars",
+    subtitle = "red = stock, green = investing, blue = cash") 
+  
+
+#'### ------------------------------------------------------------------------
+#' write to file
+write.csv(stocks, file =  "./report/stocks.csv")
+

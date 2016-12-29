@@ -6,9 +6,9 @@
 #'     code_folding: show
 #'     
 #' --- 
-options(width = 200)
+# options(width = 200)
 
-rm(list=ls())
+# rm(list=ls())
 
 #'### ------------------------------------------------------------------------
 # STEP 1: Master List
@@ -16,7 +16,7 @@ rm(list=ls())
 
 
 #'### ------------------------------------------------------------------------
-# STEP2: Creat a data list of stocks which can be succesfully found on yahoo
+#'##### STEP2: Creat a data list of stocks which can be succesfully found on yahoo
 # ( Many fail)
 
 f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ), days = 90){
@@ -51,9 +51,6 @@ f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ), days = 90){
   
   return(dl)
 }
-
-symbols = c('AAPL','GOOG','EMAN','TRTC', 'LINE', 'LNCO', 'INVT')
-dl <- f2_get_stock_data(symbols)
 
 #'### ------------------------------------------------------------------------
 # STEP3 Compute Signal Data for all Stock
@@ -126,18 +123,15 @@ f3_get_stock_thresholds <- function(dlist = dl, periods = 9,
  return(dlist)
 }
   
- datalist <- f3_get_stock_thresholds(dl)
- head(datalist)
 
- 
 #'### ------------------------------------------------------------------------
 # STEP4  If RSI threshold was met in the last 10 days add the stock to the 
 # interesting list. append any stocks that meet the RSI threshold withing the
 # last ten days
 # symbol <- list()
 # i=1
-f4_get_interesting_symbols <- function(dlist = datalist){
-  dlist = datalist
+f4_get_interesting_symbols <- function(dlist = stock_rsi){
+  dlist = stock_rsi
   symbol <- list()
    
   for(i in 1:length(dlist)){ 
@@ -173,12 +167,6 @@ f4_get_interesting_symbols <- function(dlist = datalist){
   # symbol <- plyr::ldply(symbol, data.frame, .progress = 'text')
   return(symbol)
 }
-
-  symbols <- f4_get_interesting_symbols(datalist)
-
-symbols
- 
-    
 
 #'### ------------------------------------------------------------------------
 # function to buy or sell stock shares
@@ -227,48 +215,55 @@ transact_account <- function(shares = 0, balance = 0,  price = 0, percent = 0,
   return(balance2)
 }
 
-
-
- #'### ------------------------------------------------------------------------
- # END OF PROGRAM #############################################################
- ##############################################################################
-# symbol <- attr(dlist[[1]], 'symbol')
- 
-# ways to look at the list (uncomment to try)
-# str(dl)
-# unlist(dl)
-# flatten(dl)
-# dl[1]
-# dl[[1]]
-# dl
-
-# 
-# # here is the original datalist
-# dl
-# 
-# for (i in 1:length(dl)){
-#   
-#   # turn list i into a dataframe
-#   df =  data.frame(dl[i]) 
-#   
-#   # multiply the 6th column of data times 2 and put into a new column 'times2'
-#   df$times2 <- df[[6]]*2
-#   
-#   # turn the dataframe back into a list
-#   df <- list(df)
-#   
-#   # replace the original list 'i' with the modified list
-#   dl[i] <- df
-# 
-#   }
-# 
-# # the modified datalist
-# dl
 #'### ------------------------------------------------------------------------
-# STEP3 Compute Signal Data for all Stock
-# Goes throught the list of symbol data, Compusting the RSI values from the 
-# close price and add the values to each xts set of symbol data.
-
-
+#' convert the stocks to a data frame, rename the columns, flatten and nest
+f5_flatten_and_nest_by_stock <- function(dl2){
+  
+  dl <- dl2
+  
+  for( i in 1:length(dl)) {
+    # i = 1
+    
+    # get the stock name
+    stock_name <- names(dl[[i]]) %>%
+      str_split( pattern = "\\.") %>% 
+      unlist() %>%
+      first()
+    
+    stock_name
+    
+    # convert each xts object in the list to a dataframe
+    dl[[i]] <- as.data.frame(dl[[i]])
+    
+    # rename the columns for each dataframe
+    names(dl[[i]])
+    
+    colnames(dl[[i]]) <- c("open", "high", "low", "close", "volume", 
+                           "adjusted","ema", "rsi_threshold", "rsi_sell", "rsi_buy")
+    
+    # take the dates that are in the row names and make them a column in the dataframe.
+    # then add the stock name
+    dl[[i]] <- dl[[i]] %>%
+      mutate(date  = ymd(row.names(.))) %>%
+      mutate(stock = stock_name)
+    
+  }
+  # head(dl)
+  
+  # flatten the list of data frames into one dataframe
+  
+  dl_flat <- list.rbind(dl)
+  
+  dl_flat <- na.omit(dl_flat)
+  head(dl_flat)
+  
+  # nest by each stock
+  dl_nested <- dl_flat %>%
+    group_by(stock) %>%
+    nest()
+  
+  # return(dl_flat)
+  return(dl_nested)
+}
 
 
