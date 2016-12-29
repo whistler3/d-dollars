@@ -19,7 +19,7 @@ rm(list=ls())
 # STEP2: Creat a data list of stocks which can be succesfully found on yahoo
 # ( Many fail)
 
-get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN'), days = 90){
+f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ), days = 90){
 # returns a data list with containing the data from somes stocks of interest
   dl <- list()
 
@@ -49,19 +49,18 @@ get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN'), days = 90){
      }
    }
   
-    
   return(dl)
 }
 
-symbols = c('AAPL','GOOG','EMAN')
-dl <- get_stock_data(symbols)
+symbols = c('AAPL','GOOG','EMAN','TRTC', 'LINE', 'LNCO', 'INVT')
+dl <- f2_get_stock_data(symbols)
 
 #'### ------------------------------------------------------------------------
 # STEP3 Compute Signal Data for all Stock
 # Goes throught the list of symbol data, Compusting the RSI values from the 
 # close price and add the values to each xts set of symbol data.
 
-get_stock_thresholds <- function(dlist = dl, periods = 9, 
+f3_get_stock_thresholds <- function(dlist = dl, periods = 9, 
                       sell_above = 45, buy_below = 40){
   
  # uncomment to test the function from within  
@@ -127,17 +126,17 @@ get_stock_thresholds <- function(dlist = dl, periods = 9,
  return(dlist)
 }
   
- datalist <- get_stock_thresholds(dl)
+ datalist <- f3_get_stock_thresholds(dl)
  head(datalist)
 
- #'### ------------------------------------------------------------------------
- # 
-  # If RSI threshold was met in the last 10 days add the stock to the 
-  # interesting list.
-  # append any stocks that meet the RSI threshold withing the last ten days
-  # symbol <- list()
-  # i=1
-get_stocks_meeting_rsi_threshold <- function(dlist = datalist){
+ 
+#'### ------------------------------------------------------------------------
+# STEP4  If RSI threshold was met in the last 10 days add the stock to the 
+# interesting list. append any stocks that meet the RSI threshold withing the
+# last ten days
+# symbol <- list()
+# i=1
+f4_get_interesting_symbols <- function(dlist = datalist){
   dlist = datalist
   symbol <- list()
    
@@ -175,11 +174,59 @@ get_stocks_meeting_rsi_threshold <- function(dlist = datalist){
   return(symbol)
 }
 
-  symbols <- get_stocks_meeting_rsi_threshold(datalist)
+  symbols <- f4_get_interesting_symbols(datalist)
 
 symbols
  
     
+
+#'### ------------------------------------------------------------------------
+# function to buy or sell stock shares
+transact_shares <- function(shares, balance, price, percent, 
+                            transaction = "buy/sell"){
+  # shares      = 0
+  # balance     = 3123
+  # price       = 2.35
+  # percent     = .1
+  # transaction = "buy"
+  
+  n_shares <- round(percent*balance/price, digits = 0)
+  # n_shares
+  
+  shares2 <- switch(transaction,
+                    buy  = shares + n_shares,
+                    sell = if( shares >= n_shares){ shares - n_shares} else {0})
+  # shares2
+  return(shares2)
+}
+
+#'### ------------------------------------------------------------------------
+# function to adjust your account balance depending on the type of transaction
+transact_account <- function(shares = 0, balance = 0,  price = 0, percent = 0, 
+                             transaction = "buy/sell/deposit/withdraw", 
+                             amount = 200){
+  # shares = 1
+  # balance = 1000
+  # price = 10
+  # percent = .1
+  # transaction = "deposit"
+  # amount = 200
+  
+  n_shares <- round(percent*balance/price, digits = 0)
+  n_shares
+  
+  balance2 <- 
+    switch(transaction,
+           buy      = balance - n_shares*price,
+           sell     = if(shares >= n_shares) { balance + n_shares*price} else{
+             balance + shares*price},
+           deposit  = balance + amount,
+           withdraw = balance - amount
+    )
+  balance2
+  return(balance2)
+}
+
 
 
  #'### ------------------------------------------------------------------------
