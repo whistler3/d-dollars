@@ -34,7 +34,7 @@
 #   ggtitle("Remaining pattern")
 # 
 
-#-----
+#----- 
 #'### ------------------------------------------------------------------------
 # given the following stocks.
 symbols = c('AAPL','GOOG','EMAN')

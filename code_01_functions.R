@@ -14,7 +14,6 @@
 # STEP 1: Master List
 
 
-
 #'### ------------------------------------------------------------------------
 #'##### STEP2: Creat a data list of stocks which can be succesfully found on yahoo
 # ( Many fail)
