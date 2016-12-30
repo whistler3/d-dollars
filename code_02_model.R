@@ -113,24 +113,51 @@ head(dl2)
 by_stock <- f5_flatten_and_nest_by_stock(dl2)
 head(by_stock)
 
-# run the model and put the model into the by_stock data frame
+# run the model and put the model into the by_stock nest
 by_stock <- by_stock %>%
   mutate(model = map(data, f6_buy_sell_hold_model))
 by_stock$model[1]
 
+# get return on investment 'roi' and put the roi into the by_stock nest
+by_stock <- by_stock %>%
+  mutate(roi = map(model, f7_get_roi))
+
+unnest(by_stock, roi)
 
 
-# get roi
-roi <- by_stock %>%
-  unnest( model) %>%
-  group_by(stock) %>%
-  # arrange(date) %>%
-  filter(row_number() == n()) %>%
-  mutate(investing.roi  = 100*(investing.total  - cash.only.total)/cash.only.total) %>%
-  mutate(hold.stock.roi = 100*(hold.stock.total - cash.only.total)/cash.only.total) %>%
-  select(stock, investing.roi, hold.stock.roi)
+# want to generate a random set of rsi thresholds to use in the search
+# (from the book: http://r4ds.had.co.nz/model-basics.html )
 
-roi
-
-
-roi
+# 
+# thresholds <- tibble(
+#   sell_above = runif(n = 50, min = 10, max = 100),
+#   buy_below  = runif(n = 50, min = 0,  max = 90)
+# )
+# thresholds
+# 
+# thresholds %>%
+#   mutate(roi = purrr)
+# 
+# grid <- expand.grid(
+#   a1 = seq(-5, 20, length = 25),
+#   a2 = seq(1, 3, length = 25)
+# ) %>% 
+#   mutate(dist = purrr::map2_dbl(a1, a2, sim1_dist))
+# 
+# grid %>% 
+#   ggplot(aes(a1, a2)) +
+#   geom_point(data = filter(grid, rank(dist) <= 10), size = 4, colour = "red") +
+#   geom_point(aes(colour = -dist)) 
+# 
+# 
+# 
+# 
+# df <- tibble::data_frame(
+#   x = sort(runif(100)),
+#   y = 5 * x + 0.5 * x ^ 2 + 3 + rnorm(length(x))
+# )
+# plot(df)
+# 
+# m1 <- lm(y ~ x, data = df)
+# str(ml)
+# df %>% add_residuals(m1)

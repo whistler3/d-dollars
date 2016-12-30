@@ -13,11 +13,9 @@
 #'### ------------------------------------------------------------------------
 # STEP 1: Master List
 
-
 #'### ------------------------------------------------------------------------
 #'##### STEP2: Creat a data list of stocks which can be succesfully found on yahoo
 # ( Many fail)
-
 f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ), days = 90){
 # returns a data list with containing the data from somes stocks of interest
   dl <- list()
@@ -55,7 +53,6 @@ f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ), days = 90){
 # STEP3 Compute Signal Data for all Stock
 # Goes throught the list of symbol data, Compusting the RSI values from the 
 # close price and add the values to each xts set of symbol data.
-
 f3_get_stock_thresholds <- function(dlist = dl, periods = 9, 
                       sell_above = 45, buy_below = 40){
   
@@ -122,13 +119,10 @@ f3_get_stock_thresholds <- function(dlist = dl, periods = 9,
  return(dlist)
 }
   
-
 #'### ------------------------------------------------------------------------
 # STEP4  If RSI threshold was met in the last 10 days add the stock to the 
 # interesting list. append any stocks that meet the RSI threshold withing the
 # last ten days
-# symbol <- list()
-# i=1
 f4_get_interesting_symbols <- function(dlist = stock_rsi){
   dlist = stock_rsi
   symbol <- list()
@@ -165,53 +159,6 @@ f4_get_interesting_symbols <- function(dlist = stock_rsi){
  
   # symbol <- plyr::ldply(symbol, data.frame, .progress = 'text')
   return(symbol)
-}
-
-#'### ------------------------------------------------------------------------
-# function to buy or sell stock shares
-transact_shares <- function(shares, balance, price, percent, 
-                            transaction = "buy/sell"){
-  # shares      = 0
-  # balance     = 3123
-  # price       = 2.35
-  # percent     = .1
-  # transaction = "buy"
-  
-  n_shares <- round(percent*balance/price, digits = 0)
-  # n_shares
-  
-  shares2 <- switch(transaction,
-                    buy  = shares + n_shares,
-                    sell = if( shares >= n_shares){ shares - n_shares} else {0})
-  # shares2
-  return(shares2)
-}
-
-#'### ------------------------------------------------------------------------
-# function to adjust your account balance depending on the type of transaction
-transact_account <- function(shares = 0, balance = 0,  price = 0, percent = 0, 
-                             transaction = "buy/sell/deposit/withdraw", 
-                             amount = 200){
-  # shares = 1
-  # balance = 1000
-  # price = 10
-  # percent = .1
-  # transaction = "deposit"
-  # amount = 200
-  
-  n_shares <- round(percent*balance/price, digits = 0)
-  n_shares
-  
-  balance2 <- 
-    switch(transaction,
-           buy      = balance - n_shares*price,
-           sell     = if(shares >= n_shares) { balance + n_shares*price} else{
-             balance + shares*price},
-           deposit  = balance + amount,
-           withdraw = balance - amount
-    )
-  balance2
-  return(balance2)
 }
 
 #'### ------------------------------------------------------------------------
@@ -265,11 +212,57 @@ f5_flatten_and_nest_by_stock <- function(dl2){
   return(dl_nested)
 }
 
+#'### ------------------------------------------------------------------------
+# function to buy or sell stock shares. Used by f6_buy_sell_hold_model
+buy_sell_shares <- function(shares, balance, price, percent, 
+                            transaction = "buy/sell"){
+  # shares      = 0
+  # balance     = 3123
+  # price       = 2.35
+  # percent     = .1
+  # transaction = "buy"
+  
+  n_shares <- round(percent*balance/price, digits = 0)
+  # n_shares
+  
+  shares2 <- switch(transaction,
+                    buy  = shares + n_shares,
+                    sell = if( shares >= n_shares){ shares - n_shares} else {0})
+  # shares2
+  return(shares2)
+}
 
 #'### ------------------------------------------------------------------------
-#' run the model
-f6_buy_sell_hold_model <- function(dl = df){
+# function to update the account balance depending on the type of transaction.
+# Used by f6_buy_sell_hold_model
+update_balance <- function(shares = 0, balance = 0,  price = 0, percent = 0, 
+                             transaction = "buy/sell/deposit/withdraw", 
+                             amount = 200){
+  # shares = 1
+  # balance = 1000
+  # price = 10
+  # percent = .1
+  # transaction = "deposit"
+  # amount = 200
   
+  n_shares <- round(percent*balance/price, digits = 0)
+  n_shares
+  
+  balance2 <- 
+    switch(transaction,
+           buy      = balance - n_shares*price,
+           sell     = if(shares >= n_shares) { balance + n_shares*price} else{
+             balance + shares*price},
+           deposit  = balance + amount,
+           withdraw = balance - amount
+    )
+  balance2
+  return(balance2)
+}
+  
+#'### ------------------------------------------------------------------------
+#' run the buy sell model
+f6_buy_sell_hold_model <- function(dl = df){
   # dl = dl3
   
   dl <- dl %>%
@@ -288,25 +281,25 @@ f6_buy_sell_hold_model <- function(dl = df){
     # i = 2
     percent = .1
     #'### ----------------------------------
-    dl$cash.only.total[i] <- transact_account(balance = dl$cash.only.total[i-1],
+    dl$cash.only.total[i] <- update_balance(balance = dl$cash.only.total[i-1],
                                               transaction = "deposit", amount = 200)
     # dl$cash.only.total[i]
     
     #'### ----------------------------------
     #every day we get $200 added to the only buy balance
-    dl$hold.stock.balance[i] <- transact_account(balance = dl$hold.stock.balance[i-1],
+    dl$hold.stock.balance[i] <- update_balance(balance = dl$hold.stock.balance[i-1],
                                                  transaction = "deposit", amount = 200)
     dl$hold.stock.balance[i]
     
     # every day we buy if able
-    dl$hold.stock.shares[i] <- transact_shares(shares = dl$hold.stock.shares[i-1],
+    dl$hold.stock.shares[i] <- buy_sell_shares(shares = dl$hold.stock.shares[i-1],
                                                balance = dl$hold.stock.balance[i],
                                                price = dl$close[i],
                                                percent = .99,
                                                transaction = "buy")
     dl$hold.stock.shares[i]
     
-    dl$hold.stock.balance[i] <- transact_account(shares  = dl$hold.stock.shares[i-1],
+    dl$hold.stock.balance[i] <- update_balance(shares  = dl$hold.stock.shares[i-1],
                                                  balance = dl$cash.only.total[i],
                                                  price   = dl$close[i],
                                                  percent = .99,
@@ -315,11 +308,11 @@ f6_buy_sell_hold_model <- function(dl = df){
     
     #'### ----------------------------------
     # every day we get $200 added to the investing.balance
-    dl$investing.balance[i] <- transact_account(balance = dl$investing.balance[i-1],
+    dl$investing.balance[i] <- update_balance(balance = dl$investing.balance[i-1],
                                                 transaction = "deposit", amount = 200)
     # do we buy anything today?
     if (dl$rsi_buy[i] > 0 )
-      dl$investing.shares[i] <- transact_shares(shares = dl$investing.shares[i-1],
+      dl$investing.shares[i] <- buy_sell_shares(shares = dl$investing.shares[i-1],
                                                 balance = dl$investing.balance[i],
                                                 price = dl$close[i],
                                                 percent = percent,
@@ -328,7 +321,7 @@ f6_buy_sell_hold_model <- function(dl = df){
     
     
     if (dl$rsi_buy[i] > 0 )
-      dl$investing.balance[i] <- transact_account(shares  = dl$investing.shares[i],
+      dl$investing.balance[i] <- update_balance(shares  = dl$investing.shares[i],
                                                   balance = dl$investing.balance[i],
                                                   price   = dl$close[i],
                                                   percent = percent,
@@ -336,7 +329,7 @@ f6_buy_sell_hold_model <- function(dl = df){
     
     # do we sell anything today?
     if (dl$rsi_sell[i] > 0 )
-      dl$investing.shares[i] <- transact_shares(shares = dl$investing.shares[i-1],
+      dl$investing.shares[i] <- buy_sell_shares(shares = dl$investing.shares[i-1],
                                                 balance = dl$investing.balance[i],
                                                 price = dl$close[i],
                                                 percent = percent,
@@ -344,7 +337,7 @@ f6_buy_sell_hold_model <- function(dl = df){
       ) 
     
     if (dl$rsi_sell[i] > 0 ) 
-      dl$investing.balance[i] <- transact_account(shares  = dl$investing.shares[i-1],
+      dl$investing.balance[i] <- update_balance(shares  = dl$investing.shares[i-1],
                                                   balance = dl$investing.balance[i],
                                                   price   = dl$close[i],
                                                   percent = percent,
@@ -359,3 +352,17 @@ f6_buy_sell_hold_model <- function(dl = df){
   
 }
 
+#'### ------------------------------------------------------------------------
+#' calculate the return on investment
+f7_get_roi <- function(by_stock_data){
+  
+  roi <- by_stock_data %>% 
+    filter(row_number() == n()) %>%
+    mutate(investing.roi  = 100*(investing.total  - 
+                                   cash.only.total)/cash.only.total) %>%
+    mutate(hold.stock.roi = 100*(hold.stock.total - 
+                                   cash.only.total)/cash.only.total) %>%
+    select(investing.roi, hold.stock.roi)
+  
+  return(roi)
+}
