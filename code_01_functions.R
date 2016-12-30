@@ -266,3 +266,96 @@ f5_flatten_and_nest_by_stock <- function(dl2){
 }
 
 
+#'### ------------------------------------------------------------------------
+#' run the model
+f6_buy_sell_hold_model <- function(dl = df){
+  
+  # dl = dl3
+  
+  dl <- dl %>%
+    select( date, close, rsi_buy, rsi_sell) %>%
+    mutate(cash.only.total    = 0,
+           hold.stock.balance = 0,
+           hold.stock.shares  = 0,
+           hold.stock.total   = 0,
+           investing.balance  = 0,
+           investing.shares   = 0,
+           investing.total    = 0) 
+  
+  #'### -------------------------------
+  # buy sell hold!!
+  for (i in 2:nrow(dl)){
+    # i = 2
+    percent = .1
+    #'### ----------------------------------
+    dl$cash.only.total[i] <- transact_account(balance = dl$cash.only.total[i-1],
+                                              transaction = "deposit", amount = 200)
+    # dl$cash.only.total[i]
+    
+    #'### ----------------------------------
+    #every day we get $200 added to the only buy balance
+    dl$hold.stock.balance[i] <- transact_account(balance = dl$hold.stock.balance[i-1],
+                                                 transaction = "deposit", amount = 200)
+    dl$hold.stock.balance[i]
+    
+    # every day we buy if able
+    dl$hold.stock.shares[i] <- transact_shares(shares = dl$hold.stock.shares[i-1],
+                                               balance = dl$hold.stock.balance[i],
+                                               price = dl$close[i],
+                                               percent = .99,
+                                               transaction = "buy")
+    dl$hold.stock.shares[i]
+    
+    dl$hold.stock.balance[i] <- transact_account(shares  = dl$hold.stock.shares[i-1],
+                                                 balance = dl$cash.only.total[i],
+                                                 price   = dl$close[i],
+                                                 percent = .99,
+                                                 transaction = "buy")
+    dl$hold.stock.balance[i]
+    
+    #'### ----------------------------------
+    # every day we get $200 added to the investing.balance
+    dl$investing.balance[i] <- transact_account(balance = dl$investing.balance[i-1],
+                                                transaction = "deposit", amount = 200)
+    # do we buy anything today?
+    if (dl$rsi_buy[i] > 0 )
+      dl$investing.shares[i] <- transact_shares(shares = dl$investing.shares[i-1],
+                                                balance = dl$investing.balance[i],
+                                                price = dl$close[i],
+                                                percent = percent,
+                                                transaction = "buy"
+      ) else dl$investing.shares[i] <- dl$investing.shares[i-1]
+    
+    
+    if (dl$rsi_buy[i] > 0 )
+      dl$investing.balance[i] <- transact_account(shares  = dl$investing.shares[i],
+                                                  balance = dl$investing.balance[i],
+                                                  price   = dl$close[i],
+                                                  percent = percent,
+                                                  transaction = "buy")
+    
+    # do we sell anything today?
+    if (dl$rsi_sell[i] > 0 )
+      dl$investing.shares[i] <- transact_shares(shares = dl$investing.shares[i-1],
+                                                balance = dl$investing.balance[i],
+                                                price = dl$close[i],
+                                                percent = percent,
+                                                transaction = "sell"
+      ) 
+    
+    if (dl$rsi_sell[i] > 0 ) 
+      dl$investing.balance[i] <- transact_account(shares  = dl$investing.shares[i-1],
+                                                  balance = dl$investing.balance[i],
+                                                  price   = dl$close[i],
+                                                  percent = percent,
+                                                  transaction = "sell")
+    
+    dl <-      mutate(dl, 
+                      investing.total  = close * investing.shares  + investing.balance,
+                      hold.stock.total = close * hold.stock.shares + hold.stock.balance)
+  }
+  
+  return(dl)
+  
+}
+
