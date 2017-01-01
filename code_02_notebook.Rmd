@@ -53,23 +53,28 @@ unnest(by_stock, data)
 
 ```{r}
 by_stock <- by_stock %>%
-  mutate(model = map(data, f6_buy_sell_hold_model, buy = .3, sell = .8, buy_sell_percent = .2))
+  mutate(model = map(data, f6_buy_sell_hold_model, buy = 50, sell = 80, buy_sell_percent = .2))
 
-by_stock$model[[1]]
+by_stock$model[[2]]
 ```
 
 ```{r}
 unnest(by_stock, model) %>%
-  ggplot(aes(x = date, y = hold.stock.roi) ) + geom_line() + 
-  facet_wrap( ~stock)
+  ggplot(aes(x = date, y = hold.stock.roi) ) + geom_line(color = "red") + 
+  geom_line(aes(y = investing.roi), color = "green") +
+  theme(legend.position = "right") +
+  facet_grid(stock ~.) + ylab("roi") + ggtitle("blue = hold_cash, red = hold_stock ")
+
 ```
 
 ```{r}
 unnest(by_stock, model) %>%
-  ggplot(aes(x = date, y = investing.total), color = "green") +  geom_line() + 
-  geom_line(aes(y = cash.only.total), color = "blue") +
+  ggplot(aes(x = date, y = investing.total)) +  
+  geom_line( color = "green") + 
+  geom_line(aes(y = cash.only.total),  color = "blue") +
   geom_line(aes(y = hold.stock.total), color = "red") +
-  facet_wrap(~stock )
+  facet_grid(stock ~.) + ylab("total cash + stock in $")  + 
+  ggtitle("blue = hold_cash, red = hold_stock, green = investing")
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.

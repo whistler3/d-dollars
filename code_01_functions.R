@@ -290,19 +290,21 @@ update_balance <- function(shares = 0, balance = 0,  price = 0, percent = 0,
 
 #'### ------------------------------------------------------------------------
 #' run the buy sell model
-f6_buy_sell_hold_model <- function(df, buy, 
+f6_buy_sell_hold_model <- function(dl, buy, 
                                        sell, 
                                        buy_sell_percent ){
-  # buy = .2
-  # sell = .8 
+  # buy = 50
+  # sell = 80
   # buy_sell_percent = .2
   # dl <- by_stock$data[[1]]
   # dl
   
   # buy or sell based on threshold
-  dl <- df %>%
+  dl <- dl %>%
     mutate(sell = ifelse(rsi > sell, 1, 0)) %>%
     mutate(buy  = ifelse(rsi < buy,  1, 0))
+  
+  # dl
   
   dl <- dl %>%
     select(date, close, sell, buy) %>%
