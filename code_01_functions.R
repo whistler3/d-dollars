@@ -53,7 +53,7 @@ f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ), days = 90){
 # STEP3 Compute Signal Data for all Stock
 # Goes throught the list of symbol data, Compusting the RSI values from the 
 # close price and add the values to each xts set of symbol data.
-f3_get_stock_thresholds <- function(dlist = dl, periods = 9, 
+f3_get_stock_thresholds_old <- function(dlist = dl, periods = 9, 
                       sell_above = 45, buy_below = 40){
   
  # uncomment to test the function from within  
@@ -62,61 +62,61 @@ f3_get_stock_thresholds <- function(dlist = dl, periods = 9,
   # sell_above = 70
   # buy_below = 35
  
- for(i in 1:length(dlist)){
-   # i = 1
-   
-  # Generate and merge RSI data to xts objelct
-  # This method is using the Cl() function to find the close data
-  # CL() is used to extract and transform 'OHLC' time series columns
-  # RSI() is the Relative Strength Index
-  
-  dlist[[i]] <- merge(dlist[[i]], RSI(Cl(dlist[[i]]), n = periods))
-  
-  # Now take the RSI Data and apply a filter algorithm  to see if the RSI 
-  # value ever dipped below 50 
-  
-  RSI_Threshold <- dlist[[i]][ ,"EMA"]
-  
-  # Apply the threshold algorithm to all EMA data row by row
-  RSI_Threshold <- vapply(RSI_Threshold, 
-                          function(x){ ifelse( x < 50, 1, 0) },
-                          FUN.VALUE = numeric(nrow(RSI_Threshold)))
-  # RSI_Threshold
-  
-  RSI_sell <- dlist[[i]][ ,"EMA"]
-  
-  RSI_sell      <- vapply( RSI_sell, 
-                           function(x){ ifelse( x > sell_above, 1, 0) },
-                           FUN.VALUE = numeric(nrow(RSI_sell)))
-  RSI_sell
-  
-  RSI_buy <- dlist[[i]][ ,"EMA"]
-  
-  RSI_buy      <- vapply( RSI_buy, 
-                           function(x){ ifelse( x < buy_below, 1, 0) },
-                           FUN.VALUE = numeric(nrow(RSI_buy)))
-  RSI_buy
-  
-  # Rename the column to RSI Threshold so it can be found again in the xts object
-  colnames(RSI_Threshold) <- "RSI_Threshold"
-  colnames(RSI_sell)      <- "RSI_sell"
-  colnames(RSI_buy)       <- "RSI_buy"
-  
-  # Merge the threshold data back inthe the xts object
-  dlist[[i]] <- merge(dlist[[i]], RSI_Threshold )
-  dlist[[i]] <- merge(dlist[[i]], RSI_sell)
-  dlist[[i]] <- merge(dlist[[i]], RSI_buy)
-  
-  # Generate and merge MACD ( macd and signal column) data to xts object
-  # This method is using [,"Close"] to find the close data
-  # dlist[[i]] <- merge(dlist[[i]], MACD( dlist[[i]][,"Close"], 
-  #                                       nFast = 12, 
-  #                                       nSlow = 26, 
-  #                                       nSig = 9, 
-  #                                       maType = "EMA" ))
- }
- 
- return(dlist)
+ # for(i in 1:length(dlist)){
+ #   # i = 1
+ #   
+ #  # Generate and merge RSI data to xts objelct
+ #  # This method is using the Cl() function to find the close data
+ #  # CL() is used to extract and transform 'OHLC' time series columns
+ #  # RSI() is the Relative Strength Index
+ #  
+ #  dlist[[i]] <- merge(dlist[[i]], RSI(Cl(dlist[[i]]), n = periods))
+ #  
+ #  # Now take the RSI Data and apply a filter algorithm  to see if the RSI 
+ #  # value ever dipped below 50 
+ #  
+ #  RSI_Threshold <- dlist[[i]][ ,"EMA"]
+ #  
+ #  # Apply the threshold algorithm to all EMA data row by row
+ #  RSI_Threshold <- vapply(RSI_Threshold, 
+ #                          function(x){ ifelse( x < 50, 1, 0) },
+ #                          FUN.VALUE = numeric(nrow(RSI_Threshold)))
+ #  # RSI_Threshold
+ #  
+ #  RSI_sell <- dlist[[i]][ ,"EMA"]
+ #  
+ #  RSI_sell      <- vapply( RSI_sell, 
+ #                           function(x){ ifelse( x > sell_above, 1, 0) },
+ #                           FUN.VALUE = numeric(nrow(RSI_sell)))
+ #  RSI_sell
+ #  
+ #  RSI_buy <- dlist[[i]][ ,"EMA"]
+ #  
+ #  RSI_buy      <- vapply( RSI_buy, 
+ #                           function(x){ ifelse( x < buy_below, 1, 0) },
+ #                           FUN.VALUE = numeric(nrow(RSI_buy)))
+ #  RSI_buy
+ #  
+ #  # Rename the column to RSI Threshold so it can be found again in the xts object
+ #  colnames(RSI_Threshold) <- "RSI_Threshold"
+ #  colnames(RSI_sell)      <- "RSI_sell"
+ #  colnames(RSI_buy)       <- "RSI_buy"
+ #  
+ #  # Merge the threshold data back inthe the xts object
+ #  dlist[[i]] <- merge(dlist[[i]], RSI_Threshold )
+ #  dlist[[i]] <- merge(dlist[[i]], RSI_sell)
+ #  dlist[[i]] <- merge(dlist[[i]], RSI_buy)
+ #  
+ #  # Generate and merge MACD ( macd and signal column) data to xts object
+ #  # This method is using [,"Close"] to find the close data
+ #  # dlist[[i]] <- merge(dlist[[i]], MACD( dlist[[i]][,"Close"], 
+ #  #                                       nFast = 12, 
+ #  #                                       nSlow = 26, 
+ #  #                                       nSig = 9, 
+ #  #                                       maType = "EMA" ))
+ # }
+ # 
+ # return(dlist)
 }
   
 #'### ------------------------------------------------------------------------
@@ -161,6 +161,7 @@ f4_get_interesting_symbols <- function(dlist = stock_rsi){
   return(symbol)
 }
 
+
 #'### ------------------------------------------------------------------------
 #' convert the stocks to a data frame, rename the columns, flatten and nest
 f5_flatten_and_nest_by_stock <- function(dl2){
@@ -168,7 +169,7 @@ f5_flatten_and_nest_by_stock <- function(dl2){
   dl <- dl2
   
   for( i in 1:length(dl)) {
-    # i = 1
+     # i = 1
     
     # get the stock name
     stock_name <- names(dl[[i]]) %>%
@@ -185,7 +186,7 @@ f5_flatten_and_nest_by_stock <- function(dl2){
     names(dl[[i]])
     
     colnames(dl[[i]]) <- c("open", "high", "low", "close", "volume", 
-                           "adjusted","ema", "rsi_threshold", "rsi_sell", "rsi_buy")
+                           "adjusted")
     
     # take the dates that are in the row names and make them a column in the dataframe.
     # then add the stock name
@@ -213,6 +214,30 @@ f5_flatten_and_nest_by_stock <- function(dl2){
 }
 
 #'### ------------------------------------------------------------------------
+#' keep only needed data columns and get rsi. filter out na's
+get_rsi_thresholds <- function(df){
+  
+  periods = 14
+  
+  # keep only needed columns
+  df <- select(df, close, date)
+  
+  # calculate the rsi
+  rsi <- RSI(price = df$close, n = periods)
+  
+  # round to fewer signifigant digits
+  rsi <- round(rsi, digits = 1)
+  
+  # turn the ve into a dataframe
+  data <- data.frame(df, rsi)
+  
+  # omit the first days that have no rsi threshold
+  data <- na.omit(data)
+  
+  return(data)
+}
+
+#'### ------------------------------------------------------------------------
 # function to buy or sell stock shares. Used by f6_buy_sell_hold_model
 buy_sell_shares <- function(shares, balance, price, percent, 
                             transaction = "buy/sell"){
@@ -222,7 +247,9 @@ buy_sell_shares <- function(shares, balance, price, percent,
   # percent     = .1
   # transaction = "buy"
   
-  n_shares <- round(percent*balance/price, digits = 0)
+  # n_shares <- round(percent*balance/price, digits = 0)
+  n_shares <- trunc(percent*balance/price)
+  
   # n_shares
   
   shares2 <- switch(transaction,
@@ -245,7 +272,8 @@ update_balance <- function(shares = 0, balance = 0,  price = 0, percent = 0,
   # transaction = "deposit"
   # amount = 200
   
-  n_shares <- round(percent*balance/price, digits = 0)
+  # n_shares <- round(percent*balance/price, digits = 0)
+  n_shares <- trunc(percent*balance/price)
   n_shares
   
   balance2 <- 
@@ -259,14 +287,25 @@ update_balance <- function(shares = 0, balance = 0,  price = 0, percent = 0,
   balance2
   return(balance2)
 }
-  
+
 #'### ------------------------------------------------------------------------
 #' run the buy sell model
-f6_buy_sell_hold_model <- function(dl = df){
-  # dl = dl3
+f6_buy_sell_hold_model <- function(df, buy, 
+                                       sell, 
+                                       buy_sell_percent ){
+  # buy = .2
+  # sell = .8 
+  # buy_sell_percent = .2
+  # dl <- by_stock$data[[1]]
+  # dl
+  
+  # buy or sell based on threshold
+  dl <- df %>%
+    mutate(sell = ifelse(rsi > sell, 1, 0)) %>%
+    mutate(buy  = ifelse(rsi < buy,  1, 0))
   
   dl <- dl %>%
-    select( date, close, rsi_buy, rsi_sell) %>%
+    select(date, close, sell, buy) %>%
     mutate(cash.only.total    = 0,
            hold.stock.balance = 0,
            hold.stock.shares  = 0,
@@ -279,78 +318,81 @@ f6_buy_sell_hold_model <- function(dl = df){
   # buy sell hold!!
   for (i in 2:nrow(dl)){
     # i = 2
-    percent = .1
+    # buy_sell_percent = .1
     #'### ----------------------------------
     dl$cash.only.total[i] <- update_balance(balance = dl$cash.only.total[i-1],
-                                              transaction = "deposit", amount = 200)
+                                            transaction = "deposit", amount = 200)
     # dl$cash.only.total[i]
     
     #'### ----------------------------------
     #every day we get $200 added to the only buy balance
     dl$hold.stock.balance[i] <- update_balance(balance = dl$hold.stock.balance[i-1],
-                                                 transaction = "deposit", amount = 200)
+                                               transaction = "deposit", amount = 200)
     dl$hold.stock.balance[i]
     
     # every day we buy if able
     dl$hold.stock.shares[i] <- buy_sell_shares(shares = dl$hold.stock.shares[i-1],
                                                balance = dl$hold.stock.balance[i],
                                                price = dl$close[i],
-                                               percent = .99,
+                                               percent = 1,
                                                transaction = "buy")
     dl$hold.stock.shares[i]
     
     dl$hold.stock.balance[i] <- update_balance(shares  = dl$hold.stock.shares[i-1],
-                                                 balance = dl$cash.only.total[i],
-                                                 price   = dl$close[i],
-                                                 percent = .99,
-                                                 transaction = "buy")
+                                               balance = dl$cash.only.total[i],
+                                               price   = dl$close[i],
+                                               percent = 1,
+                                               transaction = "buy")
     dl$hold.stock.balance[i]
     
     #'### ----------------------------------
     # every day we get $200 added to the investing.balance
     dl$investing.balance[i] <- update_balance(balance = dl$investing.balance[i-1],
-                                                transaction = "deposit", amount = 200)
+                                              transaction = "deposit", amount = 200)
     # do we buy anything today?
-    if (dl$rsi_buy[i] > 0 )
+    if (dl$buy[i] > 0 )
       dl$investing.shares[i] <- buy_sell_shares(shares = dl$investing.shares[i-1],
                                                 balance = dl$investing.balance[i],
                                                 price = dl$close[i],
-                                                percent = percent,
+                                                percent = buy_sell_percent,
                                                 transaction = "buy"
       ) else dl$investing.shares[i] <- dl$investing.shares[i-1]
     
     
-    if (dl$rsi_buy[i] > 0 )
+    if (dl$buy[i] > 0 )
       dl$investing.balance[i] <- update_balance(shares  = dl$investing.shares[i],
-                                                  balance = dl$investing.balance[i],
-                                                  price   = dl$close[i],
-                                                  percent = percent,
-                                                  transaction = "buy")
+                                                balance = dl$investing.balance[i],
+                                                price   = dl$close[i],
+                                                percent = buy_sell_percent,
+                                                transaction = "buy")
     
     # do we sell anything today?
-    if (dl$rsi_sell[i] > 0 )
+    if (dl$sell[i] > 0 )
       dl$investing.shares[i] <- buy_sell_shares(shares = dl$investing.shares[i-1],
                                                 balance = dl$investing.balance[i],
                                                 price = dl$close[i],
-                                                percent = percent,
-                                                transaction = "sell"
-      ) 
+                                                percent = buy_sell_percent,
+                                                transaction = "sell")
     
-    if (dl$rsi_sell[i] > 0 ) 
+    if (dl$sell[i] > 0 )
       dl$investing.balance[i] <- update_balance(shares  = dl$investing.shares[i-1],
-                                                  balance = dl$investing.balance[i],
-                                                  price   = dl$close[i],
-                                                  percent = percent,
-                                                  transaction = "sell")
+                                                balance = dl$investing.balance[i],
+                                                price   = dl$close[i],
+                                                percent = buy_sell_percent,
+                                                transaction = "sell")
     
-    dl <-      mutate(dl, 
-                      investing.total  = close * investing.shares  + investing.balance,
-                      hold.stock.total = close * hold.stock.shares + hold.stock.balance)
   }
   
-  return(dl)
+  # calculate roi return on investment
+  dl <- dl %>%
+    mutate(investing.total  = close * investing.shares  + investing.balance) %>%
+    mutate(hold.stock.total = close * hold.stock.shares + hold.stock.balance) %>%
+    mutate(investing.roi  = 100 * (investing.total  - cash.only.total)/cash.only.total) %>%
+    mutate(hold.stock.roi = 100 * (hold.stock.total - cash.only.total)/cash.only.total)
   
+  return(dl)
 }
+
 
 #'### ------------------------------------------------------------------------
 #' calculate the return on investment
@@ -362,6 +404,7 @@ f7_get_roi <- function(by_stock_data){
                                    cash.only.total)/cash.only.total) %>%
     mutate(hold.stock.roi = 100*(hold.stock.total - 
                                    cash.only.total)/cash.only.total) %>%
+    
     select(investing.roi, hold.stock.roi)
   
   return(roi)

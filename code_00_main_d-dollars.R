@@ -20,10 +20,13 @@ library(quantmod) # Financial library
 rm(list=ls())
 
 source("code_01_functions.R")
-source("code_02_model.R")
+
+
+
+# source("code_02_model.R")
 
 # takes the output created by the budget chart tool in code_02_forecast and
 # manipulates it to create the data for the Tableau forecast variance tool
-rmarkdown::render("code_02_model.R",  output_dir = "./report")
+# rmarkdown::render("code_02_model.R",  output_dir = "./report")
 
 #

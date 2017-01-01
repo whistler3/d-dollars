@@ -1,0 +1,77 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+# remove all from memory -----
+library(knitr)
+library(rmarkdown)
+library(tidyverse)
+library(lubridate)
+library(stringr)
+# library(forcats)
+library(modelr)
+# library(broom)
+library(pander)
+library(readxl)
+library(NLP)
+library(tm)
+library(rlist)
+library(quantmod) # Financial library
+
+rm(list=ls())
+
+source("code_01_functions.R")
+```
+
+# get the stock data for the stocks that meet the rsi threshold
+```{r}
+symbols = c('AAPL','GOOG','EMAN')
+dl2 <- f2_get_stock_data(symbols, days = 120)
+head(dl2[[1]])
+
+```
+
+#' convert the stocks to a data frame, rename the columns, flatten and nest
+```{r}
+by_stock <- f5_flatten_and_nest_by_stock(dl2)
+
+by_stock
+```
+
+```{r}
+unnest(by_stock, data)
+```
+
+Keep only needed data columns and get rsi. filter out na's
+```{r}
+by_stock <- by_stock %>%
+  mutate(data = map(data, get_rsi_thresholds)) 
+unnest(by_stock, data)
+```
+
+
+```{r}
+by_stock <- by_stock %>%
+  mutate(model = map(data, f6_buy_sell_hold_model, buy = .3, sell = .8, buy_sell_percent = .2))
+
+by_stock$model[[1]]
+```
+
+```{r}
+unnest(by_stock, model) %>%
+  ggplot(aes(x = date, y = hold.stock.roi) ) + geom_line() + 
+  facet_wrap( ~stock)
+```
+
+```{r}
+unnest(by_stock, model) %>%
+  ggplot(aes(x = date, y = investing.total), color = "green") +  geom_line() + 
+  geom_line(aes(y = cash.only.total), color = "blue") +
+  geom_line(aes(y = hold.stock.total), color = "red") +
+  facet_wrap(~stock )
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
