@@ -299,6 +299,8 @@ f6_buy_sell_hold_model <- function(dl, buy,
   # dl <- by_stock$data[[1]]
   # dl
   
+
+  
   # buy or sell based on threshold
   dl <- dl %>%
     mutate(sell = ifelse(rsi > sell, 1, 0)) %>%
@@ -394,6 +396,117 @@ f6_buy_sell_hold_model <- function(dl, buy,
   
   return(dl)
 }
+
+
+#'### ------------------------------------------------------------------------
+#' run the buy sell model
+f6_buy_sell_hold_model_test <- function(dl, buy, 
+                                   sell, 
+                                   buy_sell_percent ){
+  # buy = 50
+  # sell = 80
+  # buy_sell_percent = .2
+  # dl <- by_stock$data[[1]]
+  # dl
+  
+  
+  
+  # buy or sell based on threshold
+  dl <- dl %>%
+    mutate(sell = ifelse(rsi > sell, 1, 0)) %>%
+    mutate(buy  = ifelse(rsi < buy,  1, 0))
+  
+  # dl
+  
+  dl <- dl %>%
+    select(date, close, sell, buy) %>%
+    mutate(cash.only.total    = 0,
+           hold.stock.balance = 0,
+           hold.stock.shares  = 0,
+           hold.stock.total   = 0,
+           investing.balance  = 0,
+           investing.shares   = 0,
+           investing.total    = 0) 
+  # 
+  # #'### -------------------------------
+  # # buy sell hold!!
+  # for (i in 2:nrow(dl)){
+  #   # i = 2
+  #   # buy_sell_percent = .1
+  #   #'### ----------------------------------
+  #   dl$cash.only.total[i] <- update_balance(balance = dl$cash.only.total[i-1],
+  #                                           transaction = "deposit", amount = 200)
+  #   # dl$cash.only.total[i]
+  #   
+  #   #'### ----------------------------------
+  #   #every day we get $200 added to the only buy balance
+  #   dl$hold.stock.balance[i] <- update_balance(balance = dl$hold.stock.balance[i-1],
+  #                                              transaction = "deposit", amount = 200)
+  #   dl$hold.stock.balance[i]
+  #   
+  #   # every day we buy if able
+  #   dl$hold.stock.shares[i] <- buy_sell_shares(shares = dl$hold.stock.shares[i-1],
+  #                                              balance = dl$hold.stock.balance[i],
+  #                                              price = dl$close[i],
+  #                                              percent = 1,
+  #                                              transaction = "buy")
+  #   dl$hold.stock.shares[i]
+  #   
+  #   dl$hold.stock.balance[i] <- update_balance(shares  = dl$hold.stock.shares[i-1],
+  #                                              balance = dl$cash.only.total[i],
+  #                                              price   = dl$close[i],
+  #                                              percent = 1,
+  #                                              transaction = "buy")
+  #   dl$hold.stock.balance[i]
+  #   
+  #   #'### ----------------------------------
+  #   # every day we get $200 added to the investing.balance
+  #   dl$investing.balance[i] <- update_balance(balance = dl$investing.balance[i-1],
+  #                                             transaction = "deposit", amount = 200)
+  #   # do we buy anything today?
+  #   if (dl$buy[i] > 0 )
+  #     dl$investing.shares[i] <- buy_sell_shares(shares = dl$investing.shares[i-1],
+  #                                               balance = dl$investing.balance[i],
+  #                                               price = dl$close[i],
+  #                                               percent = buy_sell_percent,
+  #                                               transaction = "buy"
+  #     ) else dl$investing.shares[i] <- dl$investing.shares[i-1]
+  #   
+  #   
+  #   if (dl$buy[i] > 0 )
+  #     dl$investing.balance[i] <- update_balance(shares  = dl$investing.shares[i],
+  #                                               balance = dl$investing.balance[i],
+  #                                               price   = dl$close[i],
+  #                                               percent = buy_sell_percent,
+  #                                               transaction = "buy")
+  #   
+  #   # do we sell anything today?
+  #   if (dl$sell[i] > 0 )
+  #     dl$investing.shares[i] <- buy_sell_shares(shares = dl$investing.shares[i-1],
+  #                                               balance = dl$investing.balance[i],
+  #                                               price = dl$close[i],
+  #                                               percent = buy_sell_percent,
+  #                                               transaction = "sell")
+  #   
+  #   if (dl$sell[i] > 0 )
+  #     dl$investing.balance[i] <- update_balance(shares  = dl$investing.shares[i-1],
+  #                                               balance = dl$investing.balance[i],
+  #                                               price   = dl$close[i],
+  #                                               percent = buy_sell_percent,
+  #                                               transaction = "sell")
+  #   
+  # }
+  # 
+  # # calculate roi return on investment
+  # dl <- dl %>%
+  #   mutate(investing.total  = close * investing.shares  + investing.balance) %>%
+  #   mutate(hold.stock.total = close * hold.stock.shares + hold.stock.balance) %>%
+  #   mutate(investing.roi  = 100 * (investing.total  - cash.only.total)/cash.only.total) %>%
+  #   mutate(hold.stock.roi = 100 * (hold.stock.total - cash.only.total)/cash.only.total)
+  # 
+  return(dl)
+}
+
 
 
 #'### ------------------------------------------------------------------------
