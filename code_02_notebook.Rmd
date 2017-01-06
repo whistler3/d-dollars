@@ -31,13 +31,13 @@ symbols = c('AAPL','GOOG','EMAN')
 
 Get the stock data for the stocks that meet the rsi threshold
 ```{r}
-dl2 <- f2_get_stock_data(symbols, days = 120)
-head(dl2[[1]])
+stocks_data <- f2_get_stock_data(symbols, days = 120)
+head(stocks_data[[1]])
 ```
 
 Convert the stocks to a data frame, rename the columns, flatten and nest
 ```{r nest_stocks_data}
-by_stock <- f5_flatten_and_nest_by_stock(dl2)
+by_stock <- f5_flatten_and_nest_by_stock(stocks_data)
 by_stock
 unnest(by_stock, data)
 ```
@@ -60,11 +60,14 @@ by_stock$model[[2]]
 
 Plot the 'Return on Investment' (roi) for the scenario
 ```{r scenario_plot_roi, message=FALSE, warning=FALSE}
+
 unnest(by_stock, model) %>%
-  ggplot(aes(x = date, y = hold.stock.roi) ) + geom_line(color = "red") + 
+  ggplot(aes(x = date, y = hold.stock.roi) ) + 
+  geom_line(color = "red") + 
   geom_line(aes(y = investing.roi), color = "green") +
+  geom_hline(mapping = NULL,  yintercept = 0, color = "blue") +
   theme(legend.position = "right") +
-  facet_grid(stock ~.) + ylab("roi") + ggtitle("blue = hold_cash, red = hold_stock ")
+  facet_grid(stock ~.) + ylab("roi") + ggtitle( "red = hold_stock, green = investing, blue = cash_only")
 
 ```
 
@@ -77,50 +80,6 @@ unnest(by_stock, model) %>%
   geom_line(aes(y = hold.stock.total), color = "red") +
   facet_grid(stock ~.) + ylab("total cash + stock in $")  + 
   ggtitle("blue = hold_cash, red = hold_stock, green = investing")
-```
-MULTIPLE SCENARIO's
-Create a grid of scenario arguments so we can find the max roi
-```{r grid_scenario_arg}
-buy  <- 
-  seq(10, 50, length.out = 4) %>%
-  as.integer()
-
-sell <- seq(50, 90, length.out = 4) %>%
-  as.integer()
-
-buy_sell_percent <- 
-  seq(.1, .5, length.out = 4) %>%
-  round(digits = 2)
-
-args1 <- expand.grid(dl = by_stock$data, buy = buy, sell = sell, 
-                     buy_sell_percent = buy_sell_percent)
-
-args1
-```
-
-
-
-```{r}
-
-
-
-models <- pmap( args1, f6_buy_sell_hold_model)
-
-# by_stock <- by_stock %>%
-#   mutate(model_grid = pmap(data, ... = buy, sell, buy_sell_percent, 
-#                            .f = f6_buy_sell_hold_model))
-# str(by_stock)
-# str(dat)
-# dat
-
-
-```
-
-
-```{r}
-
-
-models2[[1]]
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
