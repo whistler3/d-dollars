@@ -2,7 +2,7 @@
 title: "d_dollars Notebook"
 output: html_notebook
 ---
-```{r load_librarys}
+```{r load_librarys, message=FALSE, include=FALSE}
 # remove all from memory -----
 library(knitr)
 library(rmarkdown)
@@ -24,35 +24,142 @@ rm(list=ls())
 source("code_01_functions.R")
 ```
 
-Get list of stocks
 ```{r get_list_of_stocks}
+#'##### STEP2: Creat a data list of stocks which can be succesfully found on yahoo
 symbols = c('AAPL','GOOG','EMAN')
+
 ```
 
-Get the stock data for the stocks that meet the rsi threshold
-```{r}
+```{r f2_get_stock_data, echo=FALSE, warning=FALSE}
+#'### ------------------------------------------------------------------------
+# Get the stock data for the stocks that meet the rsi threshold
+f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ), days = 90){
+  
+# returns a data list with containing the data from somes stocks of interest
+  dl <- list()
+
+  # uncomment symbols to test the function from within
+  # symbols = c('AAPL','GOOG','EMAN')
+
+   for(i in 1:length(symbols)) {
+     
+     symbols[i] -> symbol
+     
+     # specify the "from" date to desired start date
+     tryit <- try(getSymbols(symbol, 
+                             from        = Sys.Date() - days, 
+                             src         = 'yahoo', 
+                             auto.assign = FALSE))
+     
+     if(inherits(tryit, "try-error")){
+       i <- i + 1
+     } 
+     
+     else {
+       # Add stock data to list
+       dl[[i]] <- tryit 
+       attr(dl[[i]], 'symbol') <- symbol
+       attr
+       rm(symbol)
+     }
+   }
+  
+  return(dl)
+}
+
 stocks_data <- f2_get_stock_data(symbols, days = 120)
 head(stocks_data[[1]])
+
 ```
 
-Convert the stocks to a data frame, rename the columns, flatten and nest
-```{r nest_stocks_data}
+```{r nest_stocks_data, echo=FALSE}
+#'### ------------------------------------------------------------------------
+#' convert the stocks to a data frame, rename the columns, flatten and nest
+f5_flatten_and_nest_by_stock <- function(dl2){
+  dl <- dl2
+  
+  for(i in 1:length(dl)) {
+    # i = 1
+    
+    # get the stock name
+    stock_name <- names(dl[[i]]) %>%
+      str_split( pattern = "\\.") %>% 
+      unlist() %>%
+      first()
+    
+    # convert each xts object in the list to a dataframe
+    dl[[i]] <- as.data.frame(dl[[i]])
+    
+    # rename the columns for each dataframe
+    names(dl[[i]])
+    
+    colnames(dl[[i]]) <- c("open", "high", "low", "close", "volume", 
+                           "adjusted")
+    
+    # take the dates that are in the row names and make them a column in the
+    # dataframe. then add the stock name
+    dl[[i]] <- dl[[i]] %>%
+      mutate(date  = ymd(row.names(.))) %>%
+      mutate(stock = stock_name)
+  }
+
+  # flatten the list of data frames into one dataframe
+  dl_flat <- list.rbind(dl)
+
+  dl_flat <- na.omit(dl_flat)
+  head(dl_flat)
+  
+  # nest by each stock
+  dl_nested <- dl_flat %>%
+    group_by(stock) %>%
+    nest()
+
+  # return(dl_flat)
+  return(dl_nested)
+}
+
 by_stock <- f5_flatten_and_nest_by_stock(stocks_data)
+
 by_stock
 unnest(by_stock, data)
 ```
 
-Keep only needed data columns and get rsi. filter out na's
-```{r get_rsi}
+```{r get_rsi_thresholds, echo=FALSE}
+#'### ------------------------------------------------------------------------
+#' keep only needed data columns and get rsi. filter out na's
+get_rsi_thresholds <- function(df, periods = 14){
+  # periods = 14
+  
+  # keep only needed columns
+  # df <- select(df, stock, close, date)
+  df <- select(df,  close, date)
+  
+  # calculate the rsi
+  rsi <- RSI(price = df$close, n = periods)
+  
+  # round to fewer signifigant digits
+  rsi <- round(rsi, digits = 1)
+  
+  # turn the ve into a dataframe
+  data <- data.frame(df, rsi)
+  
+  # omit the first days that have no rsi threshold
+  data <- na.omit(data)
+  
+  return(data)
+}
+
+# Keep only needed data columns and get rsi. filter out na's
 by_stock <- by_stock %>%
-  mutate(data = map(data, get_rsi_thresholds)) 
+  mutate(data = map(data, get_rsi_thresholds, periods = 15)) 
+
 unnest(by_stock, data)
 ```
 
-Run a scenario given arbatray buy, sell & percent arguments
 ```{r run_scenario}
+# Run a scenario given arbitrary buy, sell & percent arguments
 by_stock <- by_stock %>%
-  mutate(model = map(data, f6_buy_sell_hold_model, buy = 50, sell = 80, 
+  mutate(model = map(data, f6_buy_sell_hold_model, buy = 25, sell = 80, 
                      buy_sell_percent = .2))
 
 by_stock$model[[2]]
@@ -67,7 +174,8 @@ unnest(by_stock, model) %>%
   geom_line(aes(y = investing.roi), color = "green") +
   geom_hline(mapping = NULL,  yintercept = 0, color = "blue") +
   theme(legend.position = "right") +
-  facet_grid(stock ~.) + ylab("roi") + ggtitle( "red = hold_stock, green = investing, blue = cash_only")
+  facet_grid(stock ~.) + ylab("roi") + 
+  ggtitle( "red = hold_stock, green = investing, blue = cash_only")
 
 ```
 
