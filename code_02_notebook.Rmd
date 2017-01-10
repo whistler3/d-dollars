@@ -2,6 +2,7 @@
 title: "d_dollars Notebook"
 output: html_notebook
 ---
+
 ```{r load_librarys, message=FALSE, include=FALSE}
 # remove all from memory -----
 library(knitr)
@@ -18,24 +19,91 @@ library(NLP)
 library(tm)
 library(rlist)
 library(quantmod) # Financial library
+library(treemap)
 
 rm(list=ls())
 
 source("code_01_functions.R")
+source("code_00_functions.R")
 ```
 
-```{r get_list_of_stocks}
-#'##### STEP2: Creat a data list of stocks which can be succesfully found on yahoo
-symbols = c('AAPL','GOOG','EMAN')
+### Create a data list of stocks
+```{r get_list_of_stocks, echo=FALSE}
+
+# symbols = c('AAPL','GOOG','EMAN')
+  
+# read in the stock list table
+stocks <- read_csv(file = "./data/companylist.csv", 
+               col_types = cols(
+                                  Symbol    = col_character(),
+                                  Name      = col_character(),
+                                  LastSale  = col_number(),
+                                  MarketCap = col_number(),
+                                  `ADR TSO` = col_skip(),
+                                  IPOyear   = col_skip(),
+                                  Sector    = col_character(),
+                                  Industry  = col_character(),
+                                  `Summary Quote` = col_skip()),
+               trim_ws = TRUE, col_names = TRUE)
+
+# normalize the variable names
+colnames(stocks) <- normalize_variable_names(stocks)
+
+sectors <- stocks %>%
+  group_by(sector) 
+
+stocks %>%
+  group_by(sector) %>%
+  summarise(stocks_in_sector = n_distinct(symbol)) %>%
+  arrange(desc(stocks_in_sector)) 
+
+sectors %>% summarize(sectors_in_industry = n_distinct(industry))
+
+energy <- stocks %>%
+  filter(sector == "Energy") %>%
+  arrange(industry, symbol) %>%
+  select(industry, symbol, name) 
+
+energy
+  
+symbols <- energy$symbol
+```
+#### We will focus on the 'Energy' sector.
+```{r, echo=FALSE, fig.width=8}
+stocks %>%
+  arrange(desc(lastsale)) %>%
+  # head(n = 70) %>%
+  treemap(index = c("sector", "industry"), vSize = "marketcap", 
+          # type="categorical", 
+          vColor = "sector", title = "Top Industries & Sectors by Market Cap", algorithm = "pivotSize" )
+
+stocks %>%
+    filter(sector == "Energy") %>%
+    arrange(desc(lastsale)) %>%
+    head(n = 70)  %>%
+    mutate(lastsale = as.numeric(lastsale)) %>%
+    treemap(index = c("industry", "symbol"), vSize = "lastsale",  type = "index",
+            title = "Top Energy Stocks by Last Sale Price")
+
+stocks %>%
+    filter(sector == "Energy") %>%
+    arrange(desc(lastsale)) %>%
+    head(n = 70)  %>%
+    mutate(lastsale = as.numeric(lastsale)) %>%
+    treemap(index = c("industry", "symbol"), vSize = "marketcap",  type = "index",
+            title = "Top Energy Stocks by Market Cap")
 
 ```
 
+### Get the stock data for the stocks that meet the rsi threshold
 ```{r f2_get_stock_data, echo=FALSE, warning=FALSE}
 #'### ------------------------------------------------------------------------
 # Get the stock data for the stocks that meet the rsi threshold
-f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ), days = 90){
+f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ), 
+                              from, to =  today()){
   
-# returns a data list with containing the data from somes stocks of interest
+  
+  # returns a data list with containing the data from somes stocks of interest
   dl <- list()
 
   # uncomment symbols to test the function from within
@@ -47,33 +115,34 @@ f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ), days = 90){
      
      # specify the "from" date to desired start date
      tryit <- try(getSymbols(symbol, 
-                             from        = Sys.Date() - days, 
+                             from        = from, 
+                             to          = to,
                              src         = 'yahoo', 
                              auto.assign = FALSE))
      
      if(inherits(tryit, "try-error")){
-       i <- i + 1
-     } 
+       i <- i + 1} 
      
      else {
        # Add stock data to list
        dl[[i]] <- tryit 
        attr(dl[[i]], 'symbol') <- symbol
        attr
-       rm(symbol)
-     }
+       rm(symbol)}
    }
   
   return(dl)
 }
 
-stocks_data <- f2_get_stock_data(symbols, days = 120)
+# stocks_data <- f2_get_stock_data(symbols = energy$symbol, from = mdy("1-1-2010"), to = mdy("1-1-2012") )
+
 head(stocks_data[[1]])
 
+# write_csv(x = stocks_data, path = "./report/stocks_data.csv")
 ```
 
 ```{r nest_stocks_data, echo=FALSE}
-#'### ------------------------------------------------------------------------
+### ------------------------------------------------------------------------
 #' convert the stocks to a data frame, rename the columns, flatten and nest
 f5_flatten_and_nest_by_stock <- function(dl2){
   dl <- dl2
@@ -125,7 +194,7 @@ unnest(by_stock, data)
 ```
 
 ```{r get_rsi_thresholds, echo=FALSE}
-#'### ------------------------------------------------------------------------
+### ------------------------------------------------------------------------
 #' keep only needed data columns and get rsi. filter out na's
 get_rsi_thresholds <- function(df, periods = 14){
   # periods = 14
@@ -165,7 +234,7 @@ by_stock <- by_stock %>%
 by_stock$model[[2]]
 ```
 
-Plot the 'Return on Investment' (roi) for the scenario
+# Plot the 'Return on Investment' (roi) for the scenario
 ```{r scenario_plot_roi, message=FALSE, warning=FALSE}
 
 unnest(by_stock, model) %>%
@@ -179,7 +248,7 @@ unnest(by_stock, model) %>%
 
 ```
 
-Plot total cash value for the scenario
+# Plot total cash value for the scenario
 ```{r scenario_plot_total_cash}
 unnest(by_stock, model) %>%
   ggplot(aes(x = date, y = investing.total)) +  
