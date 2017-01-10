@@ -1,0 +1,81 @@
+---
+title: "trying concepts"
+output: html_notebook
+---
+
+```{r}
+library(gapminder)
+gapminder
+
+gp1 <- c("country", "continent")
+gp2 <- c("year", "country")
+gp3 <- c("country")
+gp <- list(gp1, gp2, gp3)
+
+do_something <- function(data, gp){
+  data %>%
+    group_by_(.dots = gp) %>%
+    mutate( mean_pop = mean(pop)) %>%
+    mutate(group = paste(gp, collapse = " "))
+  }
+
+data <- gapminder
+mod  <- tibble()
+mod2 <- tibble()
+
+for(i in seq_along(gp)){
+  mod  <- do_something(data, gp[[i]])
+  mod2 <- bind_rows(mod, mod2)
+}
+    
+mod2
+```
+
+```{r}
+all_groups <- mod2 %>%
+  group_by(group) %>%
+  nest()
+
+all_groups
+```
+
+```{r}
+by_country <- all_groups %>% filter(group == "country")
+by_country
+```
+
+```{r}
+list.cbind(gp[1])
+```
+
+```{r}
+paste(gp[1], sep = "")
+```
+
+```{r}
+paste(gp[[1]], collapse = " ")
+```
+
+```{r}
+unlist(gp[1])
+```
+
+```{r}
+splice(gp)
+
+```
+
+```{r}
+as.vector(gp[1])
+```
+
+```{r}
+as_vector(gp[1])
+```
+
+
+```{r}
+
+
+```
+
