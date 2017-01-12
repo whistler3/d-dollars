@@ -188,6 +188,7 @@ Use the saved stock data for testing. We don't want to hit the server repeatedly
   # nest by each stock
   dl_nested <- dl_flat %>%
     group_by(stock) %>%
+    filter(n() > 14)
     nest()
 
   # return(dl_flat)
@@ -203,46 +204,8 @@ by_stock %>% unnest(data)
 
 ```
 
-```{r run_and_look_f5}
-#'### ------------------------------------------------------------------------
-#' keep only needed data columns and get rsi. filter out na's
-get_rsi_thresholds <- function(data){
-  
-  # df <- by_stock %>% unnest(data) %>% filter(stock == "ARLP")
-  periods = 14
-  
-  # keep only needed columns
-  # df <- select(df, stock, close, date)
-  df <- select(df,  close, date)
-
-  # calculate the rsi
-  rsi <- RSI(price = df$close)
-  
-  
-  # round to fewer signifigant digits
-  rsi <- round(rsi, digits = 1)
-  head(rsi)
-  
-  # turn the ve into a dataframe
-  data <- data.frame(df, rsi)
-  
-  # omit the first days that have no rsi threshold
-  data <- na.omit(data)
-  
-  return(data)
-}
-
-by_stock <- by_stock %>%
-  mutate(data = map(data, get_rsi_thresholds) )
-  by_stock
-
-by_stock %>% unnest(data)
- 
-# by_stock_data %>% saveRDS(file = "./data/by_stock_data.rds")
-# by_stock_data <-  readRDS(file = "./data/by_stock_data.rds")
-```
-
 ```{r}
+
 # slice and ?nest the time series - I hope
 #'### ------------------------------------------------------------------------
 
@@ -257,7 +220,7 @@ by_stock_window <- by_stock %>%
   group_by(stock) %>%
   
   # cut the data into 24 'windows'
-  mutate(window = ntile(date, n = 24)) %>%
+  mutate(window = ntile(date, n = 12)) %>%
   
   group_by(stock, window) %>%
   
@@ -269,6 +232,111 @@ by_stock_window
 by_stock_window
 
 by_stock_window %>% unnest(data)
+```
+
+```{r run_and_look_f5}
+#'### ------------------------------------------------------------------------
+#' keep only needed data columns and get rsi. filter out na's
+
+get_rsi_thresholds <- function(df, periods = 14){
+  # periods = 14
+  
+  # keep only needed columns
+  # df <- select(df, stock, close, date)
+  df <- select(df,  close, date)
+  
+  # calculate the rsi
+  rsi <- RSI(price = df$close, n = periods)
+  
+  # round to fewer signifigant digits
+  rsi <- round(rsi, digits = 1)
+  
+  # turn the ve into a dataframe
+  data <- data.frame(df, rsi)
+  
+  # omit the first days that have no rsi threshold
+  data <- na.omit(data)
+  
+  return(data)
+}
+
+# Keep only needed data columns and get rsi. filter out na's
+by_stock<- by_stock %>%
+  mutate(data = map(data, get_rsi_thresholds, periods = 15)) 
+
+unnest(by_stock, data)
+
+
+get_rsi_thresholds <- function(data, periods){
+
+    # data <- by_stock_window %>% filter(window==1) %>% unnest(data) %>% filter(stock == "ARLP")
+    # data
+    # data2 <- tibble()
+  # rsi <- list()
+  # periods = 14
+  
+  # keep only needed columns
+  # df <- select(df, stock, close, date)
+  df <- data %>% select( close, date)
+
+  # calculate the rsi
+  # df <- df %>% 
+  #   mutate(rsi = RSI(price = close, n = periods))
+  # 
+  rsi <- RSI(price = df$close, n = periods)
+  
+  # 
+  # # round to fewer signifigant digits
+  # rsi <- round(rsi, digits = 1)
+  # # head(rsi)
+  # 
+  # # turn the ve into a dataframe
+  # data <- data.frame(df, rsi)
+  # 
+  # # omit the first days that have no rsi threshold
+  #  data <- na.omit(data)
+  
+  return(data)
+}
+
+by_stock_window2 <- by_stock_window %>% filter(window == 1) %>%
+  mutate(data = map(data, get_rsi_thresholds, periods = 15))
+
+by_stock
+
+by_stock_window <- by_stock_window %>% filter(window == 1, stock == "ARLP") %>%
+  mutate(data = map(data, get_rsi_thresholds))
+
+
+by_stock_window2
+
+by_stock_window1 <- by_stock_window %>% filter(window == 10 )
+
+by_stock_window1 %>% filter(stock == "ORIG") %>% unnest(data)
+
+
+dat <- tibble()
+for( i in seq_along(by_stock_window1$stock)) {
+  # i = 1
+  dat[i] <- by_stock_window1[i,] %>% map(data, get_rsi_thresholds)
+}
+
+
+
+by_stock <- by_stock %>%
+  mutate(data2 = map(data, get_rsi_thresholds) )
+  by_stock
+
+  data <- by_stock %>% unnest(data) %>% filter(stock == "ARLP")
+  d <- get_rsi_thresholds(data)
+  
+d <- by_stock %>% unnest(data)
+ 
+# by_stock_data %>% saveRDS(file = "./data/by_stock_data.rds")
+# by_stock_data <-  readRDS(file = "./data/by_stock_data.rds")
+```
+
+```{r}
 
 ```
 
