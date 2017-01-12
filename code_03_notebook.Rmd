@@ -186,8 +186,11 @@ Use the saved stock data for testing. We don't want to hit the server repeatedly
   head(dl_flat)
   
   # nest by each stock
+  # each stock needs to have the same number of rows of data. Filtering by > 500
+  # is a hack to filter out the stocks with too few data rows FIX
   dl_nested <- dl_flat %>%
     group_by(stock) %>%
+     filter(n() > 500) %>%
     nest()
 
   # return(dl_flat)
@@ -203,52 +206,13 @@ by_stock %>% unnest(data)
 
 ```
 
-```{r run_and_look_f5}
-#'### ------------------------------------------------------------------------
-#' keep only needed data columns and get rsi. filter out na's
-get_rsi_thresholds <- function(data){
-  
-  # df <- by_stock %>% unnest(data) %>% filter(stock == "ARLP")
-  periods = 14
-  
-  # keep only needed columns
-  # df <- select(df, stock, close, date)
-  df <- select(df,  close, date)
-
-  # calculate the rsi
-  rsi <- RSI(price = df$close)
-  
-  
-  # round to fewer signifigant digits
-  rsi <- round(rsi, digits = 1)
-  head(rsi)
-  
-  # turn the ve into a dataframe
-  data <- data.frame(df, rsi)
-  
-  # omit the first days that have no rsi threshold
-  data <- na.omit(data)
-  
-  return(data)
-}
-
-by_stock <- by_stock %>%
-  mutate(data = map(data, get_rsi_thresholds) )
-  by_stock
-
-by_stock %>% unnest(data)
- 
-# by_stock_data %>% saveRDS(file = "./data/by_stock_data.rds")
-# by_stock_data <-  readRDS(file = "./data/by_stock_data.rds")
-```
-
 ```{r}
+
 # slice and ?nest the time series - I hope
 #'### ------------------------------------------------------------------------
+# we have 2 years of data. I am going to cut it up into 12 time slices
 
-# we have 2 years of data. I am going to cut it up into 24 time slices
-
-by_stock_window <- by_stock %>%
+by_stock_window <- by_stock%>%
   
   # get the data out of it's nest
   unnest( data) %>%
@@ -266,11 +230,46 @@ by_stock_window <- by_stock %>%
  
 by_stock_window
 
-by_stock_window
-
 by_stock_window %>% unnest(data)
+```
+
+```{r run_and_look_f5}
+#'### ------------------------------------------------------------------------
+#' keep only needed data columns and get rsi. filter out na's
+# if this function fails, check to make sure the data's are all the same length
+
+get_rsi_thresholds <- function(df){
+   periods = 14
+  
+  # keep only needed columns
+  # df <- select(df, stock, close, date)
+  df <- select(df,  close, date)
+  
+  # calculate the rsi
+  rsi <- RSI(price = df$close, n = periods)
+  
+  # round to fewer signifigant digits
+  rsi <- round(rsi, digits = 1)
+  
+  # turn the ve into a dataframe
+  data <- data.frame(df, rsi)
+  
+  # omit the first days that have no rsi threshold
+  data <- na.omit(data)
+  
+  return(data)
+}
+
+# Keep only needed data columns and get rsi. filter out na's
+by_stock_window1 <- by_stock_window %>% filter(window == 1) %>%
+  mutate(data = map(data, get_rsi_thresholds)) 
+
+by_stock_window1
+by_stock_window1 %>% unnest(data)
 
 ```
+
+
 
 ```{r get_grid}
 #'### ------------------------------------------------------------------------
@@ -421,10 +420,11 @@ args <- get_grid()
 
 # take the stock 'data' that was nested inside 'by_stock' and send it to the 'get_last'
 # function. get_last steps thru one stock at a time, using each row of argements and models # what would have happened if you had used that investing strategy.
-by_stock <- by_stock %>%
+by_stock_window1a <- by_stock_window1 %>%
   mutate(model = map(data,  get_last, args))
 
-by_stock$model
+by_stock_window1a
+by_stock_window1a %>% unnest(model)
 ```
 
 ```{r}
