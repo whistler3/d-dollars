@@ -3,7 +3,7 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-MULTIPLE SCENARIO's
+
 ```{r, load_libraries, message=TRUE, warning=FALSE, include=FALSE}
 library(knitr)
 library(rmarkdown)
@@ -130,26 +130,12 @@ f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ),
   return(dl)
 }
 ```
-Use the saved stock data for testing. We don't want to hit the server repeatedly and get banned
-```{r}
-# Uncomment to get the stock data from the yahoo server for the given
-# time span
-   # stocks_data <- f2_get_stock_data(symbols, from = mdy("1-1-2010"), to = mdy("1-1-2012") )
-
-# Uncomment to save the newly fetched stock data to file
-   # saveRDS(stocks_data, file = "./data/stocks_data.rds")
-
-# read the saved stock data  
-  stocks_data <- readRDS( file = "./data/stocks_data.rds")
-
-```
 
 ```{r f5_flatten_and_nest_by_stock}
 #'### ------------------------------------------------------------------------
 #' convert the stocks to a data frame, rename the columns, flatten and nest
  f5_flatten_and_nest_by_stock <- function(dl){
    # dl <- stocks_data
-
    # filter out the stocks that have no data in them.
    dl <- Filter(length, dl)
   
@@ -168,7 +154,6 @@ Use the saved stock data for testing. We don't want to hit the server repeatedly
     
     # rename the columns for each dataframe
      names(dl[[i]])
-
     colnames(dl[[i]]) <- c("open", "high", "low", "close", "volume", 
                            "adjusted")
     
@@ -178,10 +163,8 @@ Use the saved stock data for testing. We don't want to hit the server repeatedly
       mutate(date  = ymd(row.names(.))) %>%
       mutate(stock = stock_name)
   }
-
   # flatten the list of data frames into one dataframe
   dl_flat <- list.rbind(dl)
-
   dl_flat <- na.omit(dl_flat)
   head(dl_flat)
   
@@ -190,82 +173,35 @@ Use the saved stock data for testing. We don't want to hit the server repeatedly
   # is a hack to filter out the stocks with too few data rows FIX
   dl_nested <- dl_flat %>%
     group_by(stock) %>%
-<<<<<<< HEAD
      filter(n() > 500) %>%
-=======
-    filter(n() > 14)
->>>>>>> 2da60deb8cc72a4ff40ecd422c722747cb6ed00d
     nest()
-
   # return(dl_flat)
   return(dl_nested)
 }
 
 
+```
+
+```{r read_in_stock_data}
+# Uncomment to get the stock data from the yahoo server for the given
+# time span
+   # stocks_data <- f2_get_stock_data(symbols, from = mdy("1-1-2010"), to = mdy("1-1-2012") )
+# Uncomment to save the newly fetched stock data to file
+   # saveRDS(stocks_data, file = "./data/stocks_data.rds")
+# read the saved stock data  
+stocks_data <- readRDS( file = "./data/stocks_data.rds")
+
 by_stock <- f5_flatten_and_nest_by_stock(dl = stocks_data)
-
 by_stock
-
-by_stock %>% unnest(data)
 
 ```
 
 ```{r}
-
-# slice and ?nest the time series - I hope
-#'### ------------------------------------------------------------------------
-<<<<<<< HEAD
-# we have 2 years of data. I am going to cut it up into 12 time slices
-
-by_stock_window <- by_stock%>%
-=======
-
-# we have 2 years of data. I am going to cut it up into 24 time slices
-
-by_stock_window <- by_stock %>%
->>>>>>> 2da60deb8cc72a4ff40ecd422c722747cb6ed00d
-  
-  # get the data out of it's nest
-  unnest( data) %>%
-  
-  # group
-  group_by(stock) %>%
-  
-  # cut the data into 24 'windows'
-<<<<<<< HEAD
-  mutate(window = ntile(date, n = 24)) %>%
-=======
-  mutate(window = ntile(date, n = 12)) %>%
->>>>>>> 2da60deb8cc72a4ff40ecd422c722747cb6ed00d
-  
-  group_by(stock, window) %>%
-  
-  # renest by stock and window
-  nest()
- 
-by_stock_window
-
-<<<<<<< HEAD
-=======
-by_stock_window
-
->>>>>>> 2da60deb8cc72a4ff40ecd422c722747cb6ed00d
-by_stock_window %>% unnest(data)
-```
-
-```{r run_and_look_f5}
 #'### ------------------------------------------------------------------------
 #' keep only needed data columns and get rsi. filter out na's
-<<<<<<< HEAD
 # if this function fails, check to make sure the data's are all the same length
-
 get_rsi_thresholds <- function(df){
    periods = 14
-=======
-
-get_rsi_thresholds <- function(df, periods = 14){
-  # periods = 14
->>>>>>> 2da60deb8cc72a4ff40ecd422c722747cb6ed00d
   
   # keep only needed columns
   # df <- select(df, stock, close, date)
@@ -285,9 +221,31 @@ get_rsi_thresholds <- function(df, periods = 14){
   
   return(data)
 }
-
 # Keep only needed data columns and get rsi. filter out na's
-<<<<<<< HEAD
+
+```
+
+```{r by_stock_window_get_rsi}
+# slice and ?nest the time series - I hope
+#'### ------------------------------------------------------------------------
+# we have 2 years of data. I am going to cut it up into 12 time slices
+by_stock_window <- by_stock%>%
+  
+  # get the data out of it's nest
+  unnest( data) %>%
+  
+  # group
+  group_by(stock) %>%
+  
+  # cut the data into 24 'windows'
+  mutate(window = ntile(date, n = 24)) %>%
+  
+  group_by(stock, window) %>%
+  
+  # renest by stock and window
+  nest()
+ 
+by_stock_window
 by_stock_window1 <- by_stock_window %>% filter(window == 1) %>%
   mutate(data = map(data, get_rsi_thresholds)) 
 
@@ -296,87 +254,7 @@ by_stock_window1 %>% unnest(data)
 
 ```
 
-=======
-by_stock<- by_stock %>%
-  mutate(data = map(data, get_rsi_thresholds, periods = 15)) 
-
-unnest(by_stock, data)
-
-
-get_rsi_thresholds <- function(data, periods){
-
-    # data <- by_stock_window %>% filter(window==1) %>% unnest(data) %>% filter(stock == "ARLP")
-    # data
-    # data2 <- tibble()
-  # rsi <- list()
-  # periods = 14
-  
-  # keep only needed columns
-  # df <- select(df, stock, close, date)
-  df <- data %>% select( close, date)
-
-  # calculate the rsi
-  # df <- df %>% 
-  #   mutate(rsi = RSI(price = close, n = periods))
-  # 
-  rsi <- RSI(price = df$close, n = periods)
-  
-  # 
-  # # round to fewer signifigant digits
-  # rsi <- round(rsi, digits = 1)
-  # # head(rsi)
-  # 
-  # # turn the ve into a dataframe
-  # data <- data.frame(df, rsi)
-  # 
-  # # omit the first days that have no rsi threshold
-  #  data <- na.omit(data)
-  
-  return(data)
-}
-
-by_stock_window2 <- by_stock_window %>% filter(window == 1) %>%
-  mutate(data = map(data, get_rsi_thresholds, periods = 15))
-
-by_stock
-
-by_stock_window <- by_stock_window %>% filter(window == 1, stock == "ARLP") %>%
-  mutate(data = map(data, get_rsi_thresholds))
-
-
-by_stock_window2
-
-by_stock_window1 <- by_stock_window %>% filter(window == 10 )
-
-by_stock_window1 %>% filter(stock == "ORIG") %>% unnest(data)
-
-
-dat <- tibble()
-for( i in seq_along(by_stock_window1$stock)) {
-  # i = 1
-  dat[i] <- by_stock_window1[i,] %>% map(data, get_rsi_thresholds)
-}
-
-
-
-by_stock <- by_stock %>%
-  mutate(data2 = map(data, get_rsi_thresholds) )
-  by_stock
-
-  data <- by_stock %>% unnest(data) %>% filter(stock == "ARLP")
-  d <- get_rsi_thresholds(data)
-  
-d <- by_stock %>% unnest(data)
- 
-# by_stock_data %>% saveRDS(file = "./data/by_stock_data.rds")
-# by_stock_data <-  readRDS(file = "./data/by_stock_data.rds")
-```
-
 ```{r}
->>>>>>> 2da60deb8cc72a4ff40ecd422c722747cb6ed00d
-
-
-```{r get_grid}
 #'### ------------------------------------------------------------------------
 #' Create a grid of scenario arguments so we can find the max roi
   
@@ -384,42 +262,33 @@ get_grid <- function(){
 buy  <-
   seq(10, 50, length.out = 3) %>%
   round(digits = 2)
-
 sell <- seq(50, 90, length.out = 3) %>%
   round(digits = 2)
-
 buy_sell_percent <-
   seq(.1, .5, length.out = 3) %>%
   round(digits = 2)
-
 args <- expand.grid(buy = buy, sell = sell,
                                  buy_sell_percent = buy_sell_percent)
 return(args)
 }
-
 args <- get_grid()
-
-
 args
-args[1,]
-
 ```
 
+```{r}
+args[1,]
+```
 
-```{r f6_buy_sell_hold_model_last}
-
+```{r}
 #'### ------------------------------------------------------------------------
 #' run the buy sell model
 f6_buy_sell_hold_model_last <- function(data, buy,
                                         sell, buy_sell_percent){
-
   # f6_buy_sell_hold_model_last <- function(data, args){
   # buy = 50
   # sell = 80
   # buy_sell_percent = .2
-
   dl <- as.data.frame(data[])
-
   # # buy or sell based on threshold
   dl$sell_below <- sell 
   dl$buy_above  <- buy
@@ -428,25 +297,20 @@ f6_buy_sell_hold_model_last <- function(data, buy,
   dl <- dl %>%
     mutate(sell = ifelse(rsi > sell, 1, 0)) %>%
     mutate(buy  = ifelse(rsi < buy,  1, 0))
-
-
   dl <- dl %>%
     mutate(cash.only.total    = 0,
            investing.balance  = 0,
            investing.shares   = 0,
            investing.total    = 0)
-
   #'### -------------------------------
   # buy sell hold!!
   for (i in 2:nrow(dl)){
     # i = 2
     # buy_sell_percent = .1
     #'### ----------------------------------
-
     #'### ----------------------------------
     dl$cash.only.total[i] <- update_balance(balance = dl$cash.only.total[i-1],
                                             transaction = "deposit", amount = 200)
-
     #'### ----------------------------------
     # every day we get $200 added to the investing.balance
     dl$investing.balance[i] <- update_balance(balance = dl$investing.balance[i-1],
@@ -459,15 +323,12 @@ f6_buy_sell_hold_model_last <- function(data, buy,
                                                 percent = buy_sell_percent,
                                                 transaction = "buy"
       ) else dl$investing.shares[i] <- dl$investing.shares[i-1]
-
-
     if (dl$buy[i] > 0 )
       dl$investing.balance[i] <- update_balance(shares  = dl$investing.shares[i],
                                                 balance = dl$investing.balance[i],
                                                 price   = dl$close[i],
                                                 percent = buy_sell_percent,
                                                 transaction = "buy")
-
     # do we sell anything today?
     if (dl$sell[i] > 0 )
       dl$investing.shares[i] <- buy_sell_shares(shares = dl$investing.shares[i-1],
@@ -475,7 +336,6 @@ f6_buy_sell_hold_model_last <- function(data, buy,
                                                 price = dl$close[i],
                                                 percent = buy_sell_percent,
                                                 transaction = "sell")
-
     if (dl$sell[i] > 0 )
       dl$investing.balance[i] <- update_balance(shares  = dl$investing.shares[i-1],
                                                 balance = dl$investing.balance[i],
@@ -483,20 +343,15 @@ f6_buy_sell_hold_model_last <- function(data, buy,
                                                 percent = buy_sell_percent,
                                                 transaction = "sell")
   }
-
   # calculate roi return on investment
   dl <- dl %>%
     mutate(investing.total  = close * investing.shares  + investing.balance) %>%
     mutate(investing.roi  = 100 * (investing.total  - cash.only.total)/cash.only.total)
-
   # return only the last row
   dl <- select(dl, -sell, -buy)
   dl <- last(dl)
-
   return(dl)
 }
-
-
 ```
 
 ```{r}
@@ -533,6 +388,16 @@ by_stock_window1a %>% unnest(model)
 ```
 
 ```{r}
+by_stock_window %>% unnest(data)
+
+
+# need to sort the buy/sell/percent combinations that yield the higest investing.roi's.
+# then need to apply the best buy/sell/percent combinations to the next time period
+
+
+```
+
+```{r}
 unnest(by_stock, model) %>%
   ggplot(aes(x = sell_below, y = buy_above)) + geom_raster(aes(fill = investing.roi)) +
   facet_wrap(~stock)
@@ -548,20 +413,8 @@ unnest(by_stock, model) %>%
 
 ```
 
-
-
-
 ```{r}
 # need to sort the buy/sell/percent combinations that yield the higest investing.roi's.
 # then need to apply the best buy/sell/percent combinations to the next time period
 unnest(by_stock, model)
-
-```
-
-
-```{r}
-
-
-
-```
 
