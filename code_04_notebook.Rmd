@@ -19,6 +19,10 @@ library(tm)
 library(rlist)
 library(quantmod) # Financial library
 library(treemap)
+library(plot3D)
+
+library(plot3Drgl)
+
 
 rm(list=ls())
 
@@ -66,31 +70,7 @@ energy
 symbols <- energy$symbol
 ```
 
-#### We will focus on the 'Energy' sector.
-```{r, echo=FALSE, fig.width=7}
-stocks %>%
-  arrange(desc(lastsale)) %>%
-  # head(n = 70) %>%
-  treemap(index = c("sector", "industry"), vSize = "marketcap", 
-          # type="categorical", 
-          vColor = "sector", title = "Top Industries & Sectors by Market Cap", algorithm = "pivotSize" )
 
-stocks %>%
-    filter(sector == "Energy") %>%
-    arrange(desc(lastsale)) %>%
-    head(n = 70)  %>%
-    mutate(lastsale = as.numeric(lastsale)) %>%
-    treemap(index = c("industry", "symbol"), vSize = "lastsale",  type = "index",
-            title = "Top Energy Stocks by Last Sale Price")
-
-stocks %>%
-    filter(sector == "Energy") %>%
-    arrange(desc(lastsale)) %>%
-    head(n = 70)  %>%
-    mutate(lastsale = as.numeric(lastsale)) %>%
-    treemap(index = c("industry", "symbol"), vSize = "marketcap",  type = "index",
-            title = "Top Energy Stocks by Market Cap")
-```
 
 ```{r}
 #'### ------------------------------------------------------------------------
@@ -183,20 +163,22 @@ f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ),
 ```
 
 ```{r read_in_stock_data}
-# Uncomment to get the stock data from the yahoo server for the given
-# time span
+# Uncomment to get the stock data from the yahoo server for the given time span
    # stocks_data <- f2_get_stock_data(symbols, from = mdy("1-1-2010"), to = mdy("1-1-2012") )
+
 # Uncomment to save the newly fetched stock data to file
    # saveRDS(stocks_data, file = "./data/stocks_data.rds")
+
 # read the saved stock data  
 stocks_data <- readRDS( file = "./data/stocks_data.rds")
 
 by_stock <- f5_flatten_and_nest_by_stock(dl = stocks_data)
 by_stock
+by_stock %>% unnest(data)
 
 ```
 
-```{r}
+```{r get_rsi_thresholds}
 #'### ------------------------------------------------------------------------
 #' keep only needed data columns and get rsi. filter out na's
 # if this function fails, check to make sure the data's are all the same length
@@ -221,54 +203,61 @@ get_rsi_thresholds <- function(df){
   
   return(data)
 }
-# Keep only needed data columns and get rsi. filter out na's
+
 
 ```
 
+## slice and nest the time series 
 ```{r by_stock_window_get_rsi}
-# slice and ?nest the time series - I hope
 #'### ------------------------------------------------------------------------
 # we have 2 years of data. I am going to cut it up into 12 time slices
-by_stock_window <- by_stock%>%
+get_rsi_and_slice_into_windows <- function( slices = 24, by = by_stock){
+    
+  # Take the nested data and get all the rsi thresholds
+  by_stock_window <- by %>%
+    mutate(data = map(data, get_rsi_thresholds)) 
   
-  # get the data out of it's nest
-  unnest( data) %>%
-  
-  # group
-  group_by(stock) %>%
-  
-  # cut the data into 24 'windows'
-  mutate(window = ntile(date, n = 24)) %>%
-  
-  group_by(stock, window) %>%
-  
-  # renest by stock and window
-  nest()
- 
-by_stock_window
-by_stock_window1 <- by_stock_window %>% filter(window == 1) %>%
-  mutate(data = map(data, get_rsi_thresholds)) 
+  # cut up the data set into slices by date
+  by_stock_window <- by_stock_window %>%
+    
+    # get the data out of it's nest
+    unnest( data) %>%
+    
+    # group
+    group_by(stock) %>%
+    
+    # cut the data into 24 'windows'
+    mutate(window = ntile(date, n = 24)) %>%
+    
+    group_by(stock, window) %>%
+    
+    # renest by stock and window
+    nest()
 
-by_stock_window1
-by_stock_window1 %>% unnest(data)
+  
+  return(by_stock_window)
+  
+}
+
+by_stock_window <- get_rsi_and_slice_into_windows()
+
 
 ```
 
-```{r}
+```{r get_grid}
 #'### ------------------------------------------------------------------------
 #' Create a grid of scenario arguments so we can find the max roi
   
 get_grid <- function(){
-buy  <-
-  seq(10, 50, length.out = 3) %>%
-  round(digits = 2)
-sell <- seq(50, 90, length.out = 3) %>%
-  round(digits = 2)
-buy_sell_percent <-
-  seq(.1, .5, length.out = 3) %>%
-  round(digits = 2)
-args <- expand.grid(buy = buy, sell = sell,
-                                 buy_sell_percent = buy_sell_percent)
+buy  <- seq(20, 70, length.out = 6) %>%  round(digits = 2)
+
+sell <- seq(71, 90, length.out = 4) %>%  round(digits = 2)
+
+buy_sell_percent <- .1 # seq(.1, .5, length.out = 4) %>% round(digits = 2)
+
+args <- expand.grid(buy = buy, 
+                    sell = sell,
+                    buy_sell_percent = buy_sell_percent)
 return(args)
 }
 args <- get_grid()
@@ -279,7 +268,7 @@ args
 args[1,]
 ```
 
-```{r}
+```{r f6_buy_sell_hold_model_last}
 #'### ------------------------------------------------------------------------
 #' run the buy sell model
 f6_buy_sell_hold_model_last <- function(data, buy,
@@ -380,12 +369,14 @@ args <- get_grid()
 
 # take the stock 'data' that was nested inside 'by_stock' and send it to the 'get_last'
 # function. get_last steps thru one stock at a time, using each row of argements and models # what would have happened if you had used that investing strategy.
-by_stock_window1a <- by_stock_window1 %>%
+by_stock_window1 <- by_stock_window1 %>%
   mutate(model = map(data,  get_last, args))
 
-by_stock_window1a
-by_stock_window1a %>% unnest(model)
+
+
 ```
+
+
 
 ```{r}
 by_stock_window %>% unnest(data)
@@ -397,21 +388,7 @@ by_stock_window %>% unnest(data)
 
 ```
 
-```{r}
-unnest(by_stock, model) %>%
-  ggplot(aes(x = sell_below, y = buy_above)) + geom_raster(aes(fill = investing.roi)) +
-  facet_wrap(~stock)
 
-unnest(by_stock, model) %>%
-  ggplot(aes(x = sell_below, y = buy_sell_percent)) + geom_raster(aes(fill = investing.roi)) +
-  facet_wrap(~stock)
-
-unnest(by_stock, model) %>%
-  ggplot(aes(x = buy_above, y = buy_sell_percent)) + geom_raster(aes(fill = investing.roi)) +
-  facet_wrap(~stock)
-
-
-```
 
 ```{r}
 # need to sort the buy/sell/percent combinations that yield the higest investing.roi's.

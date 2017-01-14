@@ -1,0 +1,112 @@
+These plots are based on data sets generated in code_04_notebook
+
+
+#### We will focus on the 'Energy' sector.
+```{r, echo=FALSE, fig.width=7}
+stocks %>%
+  arrange(desc(lastsale)) %>%
+  # head(n = 70) %>%
+  treemap(index = c("sector", "industry"), vSize = "marketcap", 
+          # type="categorical", 
+          vColor = "sector", title = "Top Industries & Sectors by Market Cap", algorithm = "pivotSize" )
+
+stocks %>%
+    filter(sector == "Energy") %>%
+    arrange(desc(lastsale)) %>%
+    head(n = 70)  %>%
+    mutate(lastsale = as.numeric(lastsale)) %>%
+    treemap(index = c("industry", "symbol"), vSize = "lastsale",  type = "index",
+            title = "Top Energy Stocks by Last Sale Price")
+
+stocks %>%
+    filter(sector == "Energy") %>%
+    arrange(desc(lastsale)) %>%
+    head(n = 70)  %>%
+    mutate(lastsale = as.numeric(lastsale)) %>%
+    treemap(index = c("industry", "symbol"), vSize = "marketcap",  type = "index",
+            title = "Top Energy Stocks by Market Cap")
+```
+
+
+```{r}
+model_window1 %>% unnest(data)
+library(quantmod)
+data("economics", package = "ggplot2")
+
+# Compute % Returns
+economics$returns_perc <- c(0, diff(economics$psavert)/economics$psavert[-length(economics$psavert)])
+
+# Create break points and labels for axis ticks
+brks <- economics$date[seq(1, length(economics$date), 12)]
+lbls <- lubridate::year(economics$date[seq(1, length(economics$date), 12)])
+
+# Plot
+ggplot(economics[1:100, ], aes(date, returns_perc)) + 
+  geom_area() + 
+  scale_x_date(breaks=brks, labels=lbls) + 
+  theme(axis.text.x = element_text(angle=90)) + 
+  labs(title="Area Chart", 
+       subtitle = "Perc Returns for Personal Savings", 
+       y="% Returns for Personal savings", 
+       caption="Source: economics")
+```
+
+
+```{r}
+library(ggcorrplot)
+
+glimpse(model1)
+
+corr <- model1 %>%
+  select(investing.roi, sell_below, buy_above, buy_sell_percent) %>%
+  cor() %>%
+  round(digits = 1)
+
+ggcorrplot(corr, hc.order = TRUE,
+           type = "lower",
+           lab = TRUE,
+           lab_size = 3,
+           method = "circle",
+           colors = c("tomato2", "white", "springgreen3"),
+           title = "Correlogram of stock arguments",
+           ggtheme=theme_bw)
+
+```
+
+```{r}
+
+by_stock_window1
+
+model1 <- by_stock_window1 %>% unnest( model)
+model1
+names(model1)
+
+ggplot(model1, aes(x = buy_above, y = investing.roi, color = buy_sell_percent)) + geom_point()
+
+```
+
+```{r}
+
+ggplot(model1, aes(x = as.character(buy_above), y = investing.roi) ) +
+  geom_boxplot()#+ 
+ # geom_dotplot(binaxis = "y", stackdir = "center", dotsize = .5, fill = "red") 
+```
+```{r}
+
+ggplot(model1, aes(x = as.character(sell_below), y = investing.roi) ) +
+  geom_boxplot()#+ 
+ # geom_dotplot(binaxis = "y", stackdir = "center", dotsize = .5, fill = "red") 
+```
+```{r}
+unnest(by_stock_window1, model) %>%
+  ggplot(aes(x = sell_below, y = buy_above)) + geom_raster(aes(fill = investing.roi)) #+facet_wrap(~stock)
+
+unnest(by_stock_window1, model) %>%
+  ggplot(aes(x = sell_below, y = buy_sell_percent)) + geom_raster(aes(fill = investing.roi)) +
+  facet_wrap(~stock)
+
+unnest(by_stock_window1, model) %>%
+  ggplot(aes(x = buy_above, y = buy_sell_percent)) + geom_raster(aes(fill = investing.roi)) #+ facet_wrap(~stock)
+
+
+```
