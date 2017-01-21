@@ -1,0 +1,116 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(data.table)
+library(dtplyr)
+source("code_01_functions.R")
+source("code_00_functions.R")
+
+# unnest and filter a window of data
+dl <- by_window_stock %>%
+  filter(window == 1, stock == "CLMT" | stock == "MMLP") %>%
+  unnest %>%
+  filter(date < ymd("2010-02-15")) %>%
+  group_by(date) %>% arrange(date, desc(rsi))
+
+# depending on the rsi, set the transaction to buy/sell or hold
+dl$transaction[dl$rsi > 90] <- "sell"
+dl$transaction[dl$rsi < 70] <- "buy"
+
+dl
+
+# setup up a log_book for our current holdings
+log_book <- dl %>%
+  
+  select(date, stock, shares) %>%
+  
+  group_by(stock) %>%
+  
+  summarise(shares = sum(shares)) %>%
+
+  # turn our log_book into a 'data.table'
+  tbl_dt() %>%
+  
+  # make the stock column a 'key'
+  setkey(stock)
+
+
+# look at our data.table and assign some innitial shares and a initial balance
+log_book
+# log_book["CLMT", shares := 10]
+```
+
+```{r}
+
+
+  percent <- .1
+  cash_on_hand <- 1000
+  
+  for (i in 1:nrow(dl)) {
+    
+    # i = 1
+    # the percent of our holdings of shares or money that we will spend or buy
+    # percent = .1
+
+    # do we buy anything today?
+    price_of_stock          <- dl$close[i]
+    proceeds_from_sale      <- 0
+    shares_sold             <- 0
+    transaction             <- dl$transaction[i]
+    stock_name              <- dl$stock[i]
+    shares_i_own            <- log_book[dl$stock[i], shares]
+    
+    # calculate the shares I want to sell
+    shares_i_want_to_sell   <- trunc(percent*shares_i_own/price_of_stock)
+      
+    if ( transaction == "sell" && shares_i_own >= shares_i_want_to_sell  ) {
+ 
+      # update the dl$shares and shares owned logbook 
+      dl$shares[i] <- -shares_i_want_to_sell
+      log_book[stock_name, shares:= shares_i_own - shares_i_want_to_sell]
+      
+      # calculate cash gained from stock sold
+      proceeds_from_sale <- shares_i_want_to_sell * price_of_stock
+      
+      # update cash balance and record the sale in the dl
+      cash_on_hand       <- cash_on_hand + proceeds_from_sale
+      dl$balance[i]      <- cash_on_hand
+      dl$amount[i]       <- proceeds_from_sale
+    }
+    
+    # calculate the shares I want to buy
+    shares_i_want_to_buy    <- trunc(percent*cash_on_hand/price_of_stock)
+    
+    # calculate the cash I would spend buying the stock
+     cost_of_stock <- shares_i_want_to_buy * price_of_stock
+
+    if ( transaction == "buy" && cash_on_hand >= cost_of_stock ) {
+      
+    # update the dl$shares and shares owned logbook
+     dl$shares[i] <- shares_i_want_to_buy
+     log_book[stock_name, shares:= shares_i_own + shares_i_want_to_buy]
+     
+     
+     # update cash balance and record the sale in the dl
+     cash_on_hand  <-  cash_on_hand - cost_of_stock
+     dl$amount[i]  <- -cost_of_stock
+     dl$balance[i] <- cash_on_hand
+     
+    # calculate roi return on investment
+    # dl <- dl %>%
+    # mutate(total  = close * shares  + balance) %>%
+    # mutate(investing.roi  = 100 * (total  - cash.only.total)/cash.only.total)
+     
+    }
+     log_book
+ 
+}
+
+log_book
+
+  dl
+```
