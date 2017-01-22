@@ -110,3 +110,29 @@ unnest(by_stock_window1, model) %>%
 
 
 ```
+# Plot the 'Return on Investment' (roi) for the scenario
+```{r scenario_plot_roi, message=FALSE, warning=FALSE}
+
+unnest(by_stock, model) %>%
+  ggplot(aes(x = date, y = hold.stock.roi) ) + 
+  geom_line(color = "red") + 
+  geom_line(aes(y = investing.roi), color = "green") +
+  geom_hline(mapping = NULL,  yintercept = 0, color = "blue") +
+  theme(legend.position = "right") +
+  facet_grid(stock ~.) + ylab("roi") + 
+  ggtitle( "red = hold_stock, green = investing, blue = cash_only")
+
+```
+
+# Plot total cash value for the scenario
+```{r scenario_plot_total_cash}
+unnest(by_stock, model) %>%
+  ggplot(aes(x = date, y = investing.total)) +  
+  geom_line( color = "green") + 
+  geom_line(aes(y = cash.only.total),  color = "blue") +
+  geom_line(aes(y = hold.stock.total), color = "red") +
+  facet_grid(stock ~.) + ylab("total cash + stock in $")  + 
+  ggtitle("blue = hold_cash, red = hold_stock, green = investing")
+```
+
+```
