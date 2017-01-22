@@ -34,6 +34,8 @@ source("code_04_functions.R")
 ```{r}
 # get all of the energy stock symbols
 symbols <- f1_get_company_stock_names(keep_sector = "Energy")
+# we have too many stocks, and not enough money, so restrict the stocks
+symbols <- head(symbols, n=20)
 symbols
 ```
  
@@ -85,19 +87,22 @@ data  %>% group_by(date) %>% arrange(date, desc(rsi))
 
 ```{r}
 run_simulation <- function(by_window = by_window_stock, buy = 40, 
-                           sell = 55, percent = .1, cash_on_hand = 1000){
-  # by_window    <- by_window_stock
+                           sell = 55, percent = .3, cash_on_hand = 2000){
+  by_window    <- by_window_stock
   # buy          <- 40
   # sell         <- 70
-  # percent      <- .1
+  # percent      <- .2
   # cash_on_hand <- 1000
   # 
   
   # unnest and filter a window of data (filter for testing purposes)
   dl <- by_window %>%
-    filter(window == 1, stock == "CLMT" | stock == "MMLP") %>%
-    unnest %>%
-    filter(date < ymd("2010-03-15")) %>%
+    filter(window < 4) %>% 
+    filter(n() < 10) %>%
+    
+   # filter(window < 2, stock == "CRZO" | stock == "MMLP") %>%
+    unnest() %>%
+    # filter(date < ymd("2010-03-15")) %>%
     group_by(date) %>% arrange(date, desc(rsi))
 
   # depending on the rsi, set the transaction to buy/sell or hold
@@ -117,10 +122,11 @@ run_simulation <- function(by_window = by_window_stock, buy = 40,
     
     # make the stock column a 'key'
     setkey(stock) 
-    
+  
+  # log_book["CLMT", shares := 50]  
   
   for (i in 1:nrow(dl)) {
-    # i = 1
+     # i = 1
 
     # do we buy anything today?
     price_of_stock          <- dl$close[i]
@@ -131,13 +137,13 @@ run_simulation <- function(by_window = by_window_stock, buy = 40,
     shares_i_own            <- log_book[dl$stock[i], shares]
     
     # calculate the shares I want to sell
-    shares_i_want_to_sell   <- trunc(percent*shares_i_own/price_of_stock)
+    shares_i_want_to_sell   <- trunc(percent*shares_i_own)
       
-    if ( transaction == "sell" && shares_i_own >= shares_i_want_to_sell  ) {
+    if ( transaction == "sell"  ) {
  
       # update the dl$shares and shares owned logbook 
       dl$shares[i] <- -shares_i_want_to_sell
-      log_book[stock_name, shares:= shares_i_own - shares_i_want_to_sell]
+      log_book[stock_name, shares := shares_i_own - shares_i_want_to_sell]
       
       # calculate cash gained from stock sold
       proceeds_from_sale <- shares_i_want_to_sell * price_of_stock
@@ -183,10 +189,16 @@ run_simulation <- function(by_window = by_window_stock, buy = 40,
   return(list(dl, log_book))
 }
 
-sim_results <- run_simulation()
+sim_results <- run_simulation(by_window = by_window_stock, buy = 29, sell = 50, percent = .1, cash_on_hand = 5000)
 sim_results[1]  
 sim_results[2]
   # 
 
+```
+```{r}
+ds <- sim_results[1] %>% as.data.frame %>% ungroup 
+
+ds<- ds %>% group_by(stock) %>% arrange(date)
+ds
 ```
 
