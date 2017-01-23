@@ -16,39 +16,76 @@
 #'### ------------------------------------------------------------------------
 #'##### STEP2: Creat a data list of stocks which can be succesfully found on yahoo
 # ( Many fail)
-f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ), days = 90){
-# returns a data list with containing the data from somes stocks of interest
+# f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ), days = 90){
+# # returns a data list with containing the data from somes stocks of interest
+#   dl <- list()
+# 
+#   # uncomment symbols to test the function from within
+#     # symbols = c('AAPL','GOOG','EMAN')
+# 
+#    for(i in 1:length(symbols)) {
+#      
+#      symbols[i] -> symbol
+#      
+#      # specify the "from" date to desired start date
+#      tryit <- try(getSymbols(symbol, 
+#                              from        = Sys.Date() - days, 
+#                              src         = 'yahoo', 
+#                              auto.assign = FALSE))
+#      
+#      if(inherits(tryit, "try-error")){
+#        i <- i + 1
+#      } 
+#      
+#      else {
+#        # Add stock data to list
+#        dl[[i]] <- tryit 
+#        attr(dl[[i]], 'symbol') <- symbol
+#        attr
+#        rm(symbol)
+#      }
+#    }
+#   
+#   return(dl)
+# }
+
+
+### ------------------------------------------------------------------------
+# Get the stock data for the stocks that meet the rsi threshold
+f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ),
+                              from, to =  today()){
+
+
+  # returns a data list with containing the data from somes stocks of interest
   dl <- list()
 
   # uncomment symbols to test the function from within
-    # symbols = c('AAPL','GOOG','EMAN')
+  # symbols = c('AAPL','GOOG','EMAN')
 
    for(i in 1:length(symbols)) {
-     
+
      symbols[i] -> symbol
-     
+
      # specify the "from" date to desired start date
-     tryit <- try(getSymbols(symbol, 
-                             from        = Sys.Date() - days, 
-                             src         = 'yahoo', 
+     tryit <- try(getSymbols(symbol,
+                             from        = from,
+                             to          = to,
+                             src         = 'yahoo',
                              auto.assign = FALSE))
-     
+
      if(inherits(tryit, "try-error")){
-       i <- i + 1
-     } 
-     
+       i <- i + 1}
+
      else {
        # Add stock data to list
-       dl[[i]] <- tryit 
+       dl[[i]] <- tryit
        attr(dl[[i]], 'symbol') <- symbol
        attr
-       rm(symbol)
-     }
+       rm(symbol)}
    }
-  
+
   return(dl)
 }
-
   
 #'### ------------------------------------------------------------------------
 # STEP4  If RSI threshold was met in the last 10 days add the stock to the 

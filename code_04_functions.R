@@ -50,40 +50,40 @@ f1_get_company_stock_names <- function(keep_sector = "Energy"){
 
 #### ------------------------------------------------------------------------
 # Get the stock data for the stocks that meet the rsi threshold
-# f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ), 
-#                               from, to =  today()){
-#   
-#   
-#   # returns a data list with containing the data from somes stocks of interest
-#   dl <- list()
-# 
-#   # uncomment symbols to test the function from within
-#   # symbols = c('AAPL','GOOG','EMAN')
-# 
-#    for(i in 1:length(symbols)) {
-#      
-#      symbols[i] -> symbol
-#      
-#      # specify the "from" date to desired start date
-#      tryit <- try(getSymbols(symbol, 
-#                              from        = from, 
-#                              to          = to,
-#                              src         = 'yahoo', 
-#                              auto.assign = FALSE))
-#      
-#      if(inherits(tryit, "try-error")){
-#        i <- i + 1} 
-#      
-#      else {
-#        # Add stock data to list
-#        dl[[i]] <- tryit 
-#        attr(dl[[i]], 'symbol') <- symbol
-#        attr
-#        rm(symbol)}
-#    }
-#   
-#   return(dl)
-# }
+f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ),
+                              from, to =  today()){
+
+
+  # returns a data list with containing the data from somes stocks of interest
+  dl <- list()
+
+  # uncomment symbols to test the function from within
+  # symbols = c('AAPL','GOOG','EMAN')
+
+   for(i in 1:length(symbols)) {
+
+     symbols[i] -> symbol
+
+     # specify the "from" date to desired start date
+     tryit <- try(getSymbols(symbol,
+                             from        = from,
+                             to          = to,
+                             src         = 'yahoo',
+                             auto.assign = FALSE))
+
+     if(inherits(tryit, "try-error")){
+       i <- i + 1}
+
+     else {
+       # Add stock data to list
+       dl[[i]] <- tryit
+       attr(dl[[i]], 'symbol') <- symbol
+       attr
+       rm(symbol)}
+   }
+
+  return(dl)
+}
 
 
 #### ------------------------------------------------------------------------

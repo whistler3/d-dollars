@@ -42,10 +42,10 @@ symbols
 ```{r}
 
 # Uncomment to get the stock data from the yahoo server for the given time span
-   ## stocks_data <- f2_get_stock_data(symbols, from = mdy("1-1-2010"), to = mdy("1-1-2012") )
+   stocks_data <- f2_get_stock_data(symbols, from = mdy("1-1-2010"), to = mdy("1-1-2012") )
 
 # Uncomment to save the newly fetched stock data to file
-   ## saveRDS(stocks_data, file = "./data/stocks_data.rds")
+    saveRDS(stocks_data, file = "./data/stocks_data.rds")
 
 # read the saved stock data from file
 stocks_data <- readRDS( file = "./data/stocks_data.rds")
