@@ -88,7 +88,7 @@ data  %>% group_by(date) %>% arrange(date, desc(rsi))
 ```{r}
 run_simulation <- function(by_window = by_window_stock, buy = 40, 
                            sell = 55, percent = .3, cash_on_hand = 2000){
-  by_window    <- by_window_stock
+  # by_window    <- by_window_stock
   # buy          <- 40
   # sell         <- 70
   # percent      <- .2
@@ -98,7 +98,6 @@ run_simulation <- function(by_window = by_window_stock, buy = 40,
   # unnest and filter a window of data (filter for testing purposes)
   dl <- by_window %>%
     filter(window < 4) %>% 
-    filter(n() < 10) %>%
     
    # filter(window < 2, stock == "CRZO" | stock == "MMLP") %>%
     unnest() %>%
@@ -189,16 +188,27 @@ run_simulation <- function(by_window = by_window_stock, buy = 40,
   return(list(dl, log_book))
 }
 
-sim_results <- run_simulation(by_window = by_window_stock, buy = 29, sell = 50, percent = .1, cash_on_hand = 5000)
-sim_results[1]  
+sim_results <- run_simulation(by_window = by_window_stock, buy = 29, sell = 50, percent = .1, 
+                              cash_on_hand = 5000)
+sim_results[1]
 sim_results[2]
   # 
 
 ```
-```{r}
-ds <- sim_results[1] %>% as.data.frame %>% ungroup 
 
-ds<- ds %>% group_by(stock) %>% arrange(date)
-ds
+```{r}
+buy_sell <- sim_results[1] %>% as.data.frame %>% ungroup 
+buy_sell
+my_stocks <- sim_results[2] %>% as.data.frame
+my_stocks
+glimpse(buy_sell)
+
 ```
+```{r}
+
+my_stocks %>%
+  ggplot(aes(x = date, y = balance) ) + 
+  geom_line(color = "red") + 
+  geom_hline(mapping = NULL,  yintercept = 0, color = "blue") +
+  theme(legend.position = "right")
 

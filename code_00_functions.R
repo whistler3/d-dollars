@@ -4,6 +4,7 @@
 #' Normalize the names of a dataframe. Returns a normalized list of strings to be
 #' used as new column names for your dataframe
 #'
+#'
 #' @param A dataframe
 #' @return A vector string list with normalized columnn names
 #' @example
@@ -19,6 +20,7 @@
 
 library(stringr)
 normalize_variable_names  <- function(df){
+  
   new_names <- names(df)
   new_names <- str_trim(new_names)
   new_names <- gsub(pattern = " ",            replacement = ".", new_names)
@@ -115,5 +117,7 @@ trim_character_columns <- function(df){
 #'      write_csv(x = get(data_names[i]), path = file_path[i])
 #'
 #' }
+  #
+
 
 # convert_xlsb_to_csv()
