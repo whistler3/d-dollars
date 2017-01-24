@@ -9,11 +9,7 @@ library(knitr)
 library(rmarkdown)
 library(tidyverse)
 library(lubridate)
-library(stringr)
-# library(forcats)
-library(modelr)
 library(pander)
-library(readxl)
 library(NLP)
 library(tm)
 library(rlist)
@@ -22,30 +18,32 @@ library(data.table)
 library(dtplyr)
 # library(treemap)
 # library(plot3D)
-#
 # library(plot3Drgl)
-rm(list=ls())
+rm(list = ls())
+```
+
+```{r}
 
 # source("code_01_functions.R")
 source("code_00_functions.R")
-source("code_04_functions.R")
-```
-
-```{r}
+source("code_01_functions.R")
+#### ------------------------------------------------------------------------
+#
 # get all of the energy stock symbols
 symbols <- f1_get_company_stock_names(keep_sector = "Energy")
 # we have too many stocks, and not enough money, so restrict the stocks
-symbols <- head(symbols, n=20)
+symbols <- head(symbols, n = 20)
 symbols
 ```
- 
-```{r}
 
+```{r}
+#### ------------------------------------------------------------------------
+#
 # Uncomment to get the stock data from the yahoo server for the given time span
-   stocks_data <- f2_get_stock_data(symbols, from = mdy("1-1-2010"), to = mdy("1-1-2012") )
+ #  stocks_data <- f2_get_stock_data(symbols, from = mdy("1-1-2010"), to = mdy("1-1-2012") )
 
 # Uncomment to save the newly fetched stock data to file
-    saveRDS(stocks_data, file = "./data/stocks_data.rds")
+  #  saveRDS(stocks_data, file = "./data/stocks_data.rds")
 
 # read the saved stock data from file
 stocks_data <- readRDS( file = "./data/stocks_data.rds")
@@ -53,6 +51,9 @@ stocks_data[[1]][1:5]
 ```
 
 ```{r}
+
+#### ------------------------------------------------------------------------
+#
 #' convert the stocks to a data frame, rename the columns, flatten and nest
 by_stock <- f3_flatten_and_nest_by_stock(dl = stocks_data)
 by_stock
@@ -60,14 +61,16 @@ by_stock %>% unnest(data)
 ```
 
 ```{r}
-
+#### ------------------------------------------------------------------------
+#
 # we have 2 years of data. I am going to cut it up into 12 time slices
 by_window_stock <- f5_get_rsi_and_slice_into_windows(slices = 24, by = by_stock)
 by_window_stock
 by_window_stock %>% unnest()
 ```
-
 ```{r}
+
+#### ------------------------------------------------------------------------
 # Create a grid of scenario arguments so we can find the max roi
 args <- f6_create_grid_of_arguments()
 args[1,]
@@ -75,6 +78,7 @@ args
 ```
 
 ```{r}
+#### ------------------------------------------------------------------------
 # unnest a window of data
 data <- by_window_stock %>% filter(window == 1) %>% unnest(data)
 data
@@ -86,6 +90,7 @@ data  %>% group_by(date) %>% arrange(date, desc(rsi))
 ```
 
 ```{r}
+#### ------------------------------------------------------------------------
 run_simulation <- function(by_window = by_window_stock, buy = 40, 
                            sell = 55, percent = .3, cash_on_hand = 2000){
   # by_window    <- by_window_stock
@@ -197,6 +202,7 @@ sim_results[2]
 ```
 
 ```{r}
+#### ------------------------------------------------------------------------
 buy_sell <- sim_results[1] %>% as.data.frame %>% ungroup 
 buy_sell
 my_stocks <- sim_results[2] %>% as.data.frame
@@ -204,11 +210,4 @@ my_stocks
 glimpse(buy_sell)
 
 ```
-```{r}
-
-my_stocks %>%
-  ggplot(aes(x = date, y = balance) ) + 
-  geom_line(color = "red") + 
-  geom_hline(mapping = NULL,  yintercept = 0, color = "blue") +
-  theme(legend.position = "right")
 
