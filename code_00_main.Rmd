@@ -4,7 +4,7 @@ output: html_notebook
 ---
 
 
-```{r}
+```{r, message=FALSE}
 library(knitr)
 library(rmarkdown)
 library(tidyverse)
@@ -67,6 +67,19 @@ by_stock %>% unnest(data)
 by_window_stock <- f5_get_rsi_and_slice_into_windows(slices = 24, by = by_stock)
 by_window_stock
 by_window_stock %>% unnest()
+
+# what constitutes an interesting stock? does the stock have to pass thru an 'rsi' of
+# 50 to be interesting? I am defining it as for a particular time window, which stock's
+# RSI swings more then 50?
+interesting_stocks <- by_window_stock %>% unnest %>%
+  filter(window ==1) %>%
+  group_by(stock) %>%
+  filter(max(rsi) - min(rsi) > 50)
+
+interesting_stocks
+
+by_interesting_stocks <- interesting_stocks %>% group_by(stock) %>% nest()
+by_interesting_stocks
 ```
 ```{r}
 
@@ -80,7 +93,8 @@ args
 ```{r}
 #### ------------------------------------------------------------------------
 # unnest a window of data
-data <- by_window_stock %>% filter(window == 1) %>% unnest(data)
+data <- by_interesting_stocks %>% unnest()
+#data <- by_window_stock %>% filter(window == 1) %>% unnest(data)
 data
 ```
 
@@ -94,6 +108,7 @@ data  %>% group_by(date) %>% arrange(date, desc(rsi))
 run_simulation <- function(by_window = by_window_stock, buy = 40, 
                            sell = 55, percent = .3, cash_on_hand = 2000){
   # by_window    <- by_window_stock
+  # by_window    <- by_interesting_stocks
   # buy          <- 40
   # sell         <- 70
   # percent      <- .2
@@ -102,10 +117,10 @@ run_simulation <- function(by_window = by_window_stock, buy = 40,
   
   # unnest and filter a window of data (filter for testing purposes)
   dl <- by_window %>%
-    filter(window < 4) %>% 
     
    # filter(window < 2, stock == "CRZO" | stock == "MMLP") %>%
     unnest() %>%
+    filter(window < 4) %>% 
     # filter(date < ymd("2010-03-15")) %>%
     group_by(date) %>% arrange(date, desc(rsi))
 
@@ -193,10 +208,14 @@ run_simulation <- function(by_window = by_window_stock, buy = 40,
   return(list(dl, log_book))
 }
 
-sim_results <- run_simulation(by_window = by_window_stock, buy = 29, sell = 50, percent = .1, 
+# sim_results <- run_simulation(by_window = by_window_stock, buy = 29, sell = 50, percent = .1, 
+#                               cash_on_hand = 5000)
+sim_results <- run_simulation(by_window = by_interesting_stocks, buy = 29, sell = 50, percent = .1, 
                               cash_on_hand = 5000)
+
+
 sim_results[1]
-sim_results[2]
+sim_results[2] 
   # 
 
 ```

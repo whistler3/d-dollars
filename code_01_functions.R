@@ -42,19 +42,20 @@ f1_get_company_stock_names <- function(keep_sector = "Energy"){
 # symbols
 
 
+
+
 #### ------------------------------------------------------------------------
+# returns a data list with containing the data from somes stocks of interest
 # Get the stock data for the stocks that meet the rsi threshold
 f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ),
-                              from, to =  today()){
-
-
-  # returns a data list with containing the data from somes stocks of interest
+                              from , to =  today()){
+  # symbols = c('AAPL','GOOG','EMAN' )
+  # from = today() - days(9)
+  # to   = today()
+  
   dl <- list()
 
-  # uncomment symbols to test the function from within
-  # symbols = c('AAPL','GOOG','EMAN')
-
-   for(i in 1:length(symbols)) {
+   for (i in 1:length(symbols)) {
 
      symbols[i] -> symbol
 
@@ -65,7 +66,7 @@ f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ),
                              src         = 'yahoo',
                              auto.assign = FALSE))
 
-     if(inherits(tryit, "try-error")){
+     if (inherits(tryit, "try-error")) {
        i <- i + 1}
 
      else {
@@ -79,7 +80,6 @@ f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ),
   return(dl)
 }
 
-
 #### ------------------------------------------------------------------------
 # convert the stocks to a data frame, rename the columns, flatten and nest
   f3_flatten_and_nest_by_stock <- function(dl){
@@ -87,7 +87,7 @@ f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ),
       # filter out the stocks that have no data in them.
       dl <- Filter(length, dl)
   
-     for(i in seq_along(dl)) {
+     for (i in seq_along(dl)) {
             # i = 10
     
          # get the stock name
@@ -212,9 +212,6 @@ f2_get_stock_data <- function(symbols = c('AAPL','GOOG','EMAN' ),
    }
 
  # by_window_stock <- f5_get_rsi_and_slice_into_windows(slices = 24, by = by_stock)
-
-
- 
 
 #### ------------------------------------------------------------------------
 # Create a grid of scenario arguments so we can find the max roi
