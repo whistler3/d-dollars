@@ -108,7 +108,7 @@ data  %>% group_by(date) %>% arrange(date, desc(rsi))
 run_simulation <- function(by_window = by_window_stock, buy = 40, 
                            sell = 55, percent = .3, cash_on_hand = 2000){
   # by_window    <- by_window_stock
-  # by_window    <- by_interesting_stocks
+  #  by_window    <- by_interesting_stocks
   # buy          <- 40
   # sell         <- 70
   # percent      <- .2
@@ -132,9 +132,11 @@ run_simulation <- function(by_window = by_window_stock, buy = 40,
   # setup up a log_book for our current holdings
   log_book <- dl %>%
     
-    select(date, stock, shares) %>%
+    select(date, stock, shares, amount, roi) %>%
     group_by(stock) %>%
-    summarise(shares = sum(shares)) %>%
+    summarise(shares = sum(shares),
+              amount = last(amount),
+              roi    = last(roi)) %>%
   
     # turn our log_book into a 'data.table'
     tbl_dt() %>%
@@ -145,7 +147,7 @@ run_simulation <- function(by_window = by_window_stock, buy = 40,
   # log_book["CLMT", shares := 50]  
   
   for (i in 1:nrow(dl)) {
-     # i = 1
+      # i = 1
 
     # do we buy anything today?
     price_of_stock          <- dl$close[i]
@@ -189,22 +191,26 @@ run_simulation <- function(by_window = by_window_stock, buy = 40,
      cash_on_hand  <-  cash_on_hand - cost_of_stock
      dl$amount[i]  <- -cost_of_stock
      dl$balance[i] <- cash_on_hand
-     
-    # calculate roi return on investment???
-    # dl <- dl %>%
-    # mutate(total  = close * shares  + balance) %>%
-    # mutate(investing.roi  = 100 * (total  - cash.only.total)/cash.only.total)
-     
+     log_book[stock_name, amount := amount + cost_of_stock]
     }
      
     if ( transaction == "hold"  ) {
       
      # update cash balance 
      dl$balance[i] <- cash_on_hand
-    
-    }
      
+    }
+     # update the roi return on investment
+     # calculate the roi = shares we own * todays closing price / amount spent
+     log_book[stock_name, roi := shares * dl$close[i] / log_book[stock_name, amount]]
+     # store the roi in the daily table
+     dl$roi[i] <- log_book[stock_name, roi]
   }
+    # calculate roi return on investment???
+    # dl2 <- dl %>%
+    #   group_by(stock) %>%
+    #   summarise(roi2 = sum(shares * last(close))/sum(amount))
+     
   return(list(dl, log_book))
 }
 
@@ -216,17 +222,30 @@ sim_results <- run_simulation(by_window = by_interesting_stocks, buy = 29, sell 
 
 sim_results[1]
 sim_results[2] 
+sim_results[3]
   # 
 
 ```
 
 ```{r}
 #### ------------------------------------------------------------------------
+
+results_by_stock <- sim_results[1] %>%
+  as.data.frame %>% group_by(stock) %>%
+  nest()
+
+sim_results[1] %>% as.data.frame() %>%
+  ggplot(aes(x = date, y = roi, color = stock)) + geom_line()
+
+
 buy_sell <- sim_results[1] %>% as.data.frame %>% ungroup 
 buy_sell
+
+
+
 my_stocks <- sim_results[2] %>% as.data.frame
 my_stocks
 glimpse(buy_sell)
-
+sim_results[3]
 ```
 
